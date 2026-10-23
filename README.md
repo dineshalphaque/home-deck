@@ -7,6 +7,8 @@ No ads, no rows of recommendations, and it works offline.
 [![Home Deck moving through its favorites](docs/home-deck-preview.gif)](docs/home-deck-demo.mp4)
 
 A 45-second tour of the favorites, Apps, moving an app, Inputs and Jump To: [watch the video](docs/home-deck-demo.mp4).
+I rendered it on a PC at 60 fps. On a TV it runs a little less smoothly, depending on the hardware (my Sharp manages
+about 46 to 48 fps).
 
 ![Home Deck's home screen on a TV](docs/home.png)
 

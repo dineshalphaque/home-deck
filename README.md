@@ -4,6 +4,10 @@ A neon home screen for Android TV. Your apps as big glowing tiles, the art of wh
 background, a music bar that shows what's actually playing, and your HDMI inputs named after the devices on them.
 No ads, no rows of recommendations, and it works offline.
 
+[![Home Deck moving through its favorites](docs/home-deck-preview.gif)](docs/home-deck-demo.mp4)
+
+A 45-second tour of the favorites, Apps, moving an app, Inputs and Jump To: [watch the video](docs/home-deck-demo.mp4).
+
 ![Home Deck's home screen on a TV](docs/home.png)
 
 **Android TV 8.0+ · offline by default · free and open source (MIT)**

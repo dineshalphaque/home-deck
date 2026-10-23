@@ -4,3 +4,5 @@
 *.webp binary
 *.woff2 binary
 *.jar binary
+*.gif binary
+*.mp4 binary

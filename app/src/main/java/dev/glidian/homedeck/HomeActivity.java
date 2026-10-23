@@ -41,6 +41,9 @@ public class HomeActivity extends Activity {
     static final String TAG = "HomeDeck";
     static final String HOST = "appassets.androidplatform.net";
     private static final String START = "https://" + HOST + "/index.html";
+    /** True while the home screen is in front. Every WebView in the app shares one set of timers, so the screen saver
+     *  checks it before pausing them. */
+    static boolean showing;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView web;
@@ -102,21 +105,12 @@ public class HomeActivity extends Activity {
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
             Uri u = req.getUrl();
-            if (!HOST.equals(u.getHost())) return null;
             String path = u.getPath();
-            if (path == null || path.contains("..")) return notFound();
-            if (path.equals("/favicon.ico")) return empty();        // a WebView asks for one; the TV never shows it
-            if (path.startsWith("/native/icon/")) {
+            if (HOST.equals(u.getHost()) && path != null && path.startsWith("/native/icon/")) {
                 byte[] png = bridge.iconPng(path.substring("/native/icon/".length()));
                 return png != null ? new WebResourceResponse("image/png", null, new ByteArrayInputStream(png)) : notFound();
             }
-            try {
-                InputStream in = getAssets().open("www" + path);
-                String type = mime(path);
-                return new WebResourceResponse(type, type.startsWith("text/") ? "utf-8" : null, in);
-            } catch (IOException e) {
-                return notFound();
-            }
+            return asset(HomeActivity.this, u);
         }
 
         @Override
@@ -128,6 +122,21 @@ public class HomeActivity extends Activity {
         public void onPageFinished(WebView view, String url) {
             pageReady = true;
             emit("now", bridge.nowPlaying());
+        }
+    }
+
+    /** A file from the APK's www folder, for a page served under {@link #HOST}; null for any other address. */
+    static WebResourceResponse asset(Context c, Uri u) {
+        if (!HOST.equals(u.getHost())) return null;
+        String path = u.getPath();
+        if (path == null || path.contains("..")) return notFound();
+        if (path.equals("/favicon.ico")) return empty();        // a WebView asks for one; the TV never shows it
+        try {
+            InputStream in = c.getAssets().open("www" + path);
+            String type = mime(path);
+            return new WebResourceResponse(type, type.startsWith("text/") ? "utf-8" : null, in);
+        } catch (IOException e) {
+            return notFound();
         }
     }
 
@@ -212,7 +221,7 @@ public class HomeActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        resumed = true;
+        resumed = showing = true;
         web.onResume();
         web.resumeTimers();
         bridge.musicAccess = nowPlaying.start();
@@ -228,7 +237,7 @@ public class HomeActivity extends Activity {
 
     @Override
     protected void onPause() {
-        resumed = false;
+        resumed = showing = false;
         nowPlaying.stop();
         if (tvInputs != null) tvInputs.unregisterCallback(inputWatch);
         web.onPause();

@@ -31,6 +31,8 @@ A 45-second tour of the favorites, Apps, moving an app, Inputs and Jump To: [wat
   setup, app order and About.
 - **Away screen.** After 5 minutes of nothing, the screen dims to a clock that moves every 20 seconds, so nothing
   burns in. Pick 1, 3, 5 or 10 minutes in Jump To.
+- **Screen saver.** The same away screen as your TV's screen saver, for when you're in another app. See
+  [Screen saver](#screen-saver).
 - **First-run setup.** Pick your favorites, a color and names for your inputs. Skip it if you like; it's in Jump To
   later.
 
@@ -95,6 +97,24 @@ sending a signal, a small "incoming" card offers to switch to it.
 used last, so you might just see "no signal" there.
 
 ![The Inputs section](docs/inputs.png)
+
+## Screen saver
+
+Home Deck also adds its away screen to Android's screen savers: the dim clock and the date, moving every 20 seconds.
+If the weather is on in Home Deck, it shows that too. Any button wakes the TV, and the TV still goes to sleep on its
+own timer.
+
+Pick **Home Deck** in Settings > Device Preferences > Screen saver. If your TV hides that menu, use adb:
+
+```bash
+adb shell settings put secure screensaver_components dev.glidian.homedeck/dev.glidian.homedeck.ScreenSaver
+```
+
+To go back, pick another screen saver in the same menu, or list what your TV has and set that one the same way:
+
+```bash
+adb shell cmd package query-services -a android.service.dreams.DreamService --brief
+```
 
 ## Online extras
 

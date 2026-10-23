@@ -1,0 +1,2037 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Deck</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="kit/tokens.css">
+<link rel="stylesheet" href="kit/components.css">
+<style>
+  /* Home Deck: an everyday home screen for any TV and any viewer, built on its interface kit (kit/).
+     Nothing assumes which apps or devices a TV has: apps without art get an auto-made badge, inputs name themselves.
+     Opened in a desktop browser (no Android bridge) it runs as a preview with sample apps and inputs. */
+
+  :root {
+    --hd-fs-giant: 120px;  --hd-fs-system: 96px; --hd-fs-hero-num: 80px;
+    --hd-fs-title: 44px;   --hd-fs-hud-num: 44px; --hd-fs-h2: 36px;
+    --hd-fs-sub: 30px;     --hd-fs-h3: 28px;     --hd-fs-body: 28px;
+    --hd-fs-row: 26px;     --hd-fs-small: 24px;  --hd-fs-tab: 26px;
+    --hd-fs-micro: 22px;   --hd-fs-filler: 14px;
+    --hd-u: 5px;
+    --hd-safe-x: 96px;     --hd-safe-y: 48px;
+    --acc: #5ef6ff; --acc-rgb: 94, 246, 255; --acc-dim: #56a3a2;
+    --oct: polygon(9% 0, 91% 0, 100% 9%, 100% 91%, 91% 100%, 9% 100%, 0 91%, 0 9%);
+  }
+  /* the viewer's accent color re-keys the live ink everywhere (Normal mode only) */
+  html:not([data-hd-mode="alert"]):not([data-hd-mode="hack"]) .stage {
+    --hd-act: var(--acc); --hd-act-rgb: var(--acc-rgb); --hd-act-soft: var(--acc); --hd-act-dim: var(--acc-dim);
+    --hd-focus: var(--acc);
+    --hd-act-line: rgba(var(--acc-rgb), .9); --hd-act-faint: rgba(var(--acc-rgb), .14); --hd-act-ghost: rgba(var(--acc-rgb), .07);
+    --hd-glow-act: 0 0 4px rgba(var(--acc-rgb), .35);
+  }
+  html.lite {
+    --hd-glow-line: none; --hd-glow-text: none; --hd-glow-signal: none; --hd-glow-act: none;
+    --hd-glow-drop: none; --hd-glow-drop-act: none;
+    --hd-haze-top: linear-gradient(transparent, transparent);
+    --hd-scanline: linear-gradient(transparent, transparent);
+  }
+  html.lite .stage { --hd-glow-act: none; }
+
+  .stage { color: var(--hd-text); background: var(--hd-ground); }
+  .ground { position: absolute; inset: 0; background-color: var(--hd-ground); background-image: var(--hd-ground-image); }
+
+  /* ---- the takeover: the focused thing's art, whole, fitted into one box right of the title ---- */
+  .bg { position: absolute; left: 1090px; top: 196px; width: 734px; height: 356px; padding: 18px 24px; opacity: 0;
+        transition: opacity var(--hd-t-slow) var(--hd-ease-out); pointer-events: none; }
+  .bg.on { opacity: .5; }
+  .bg img { width: 100%; height: 100%; display: block; object-fit: contain; object-position: 50% 50%; }
+  .bg-glow { position: absolute; left: 960px; top: 90px; width: 1000px; height: 580px; pointer-events: none;
+             background-color: var(--app, #5ef6ff); opacity: .2;
+             -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent);
+             transition: background-color var(--hd-t-slow) var(--hd-ease-out); }
+  .bg-shade { position: absolute; inset: 0; pointer-events: none;
+              background:
+                var(--hd-scanline),
+                linear-gradient(90deg, var(--hd-ground) 0%, rgba(7, 9, 15, .9) 30%, rgba(7, 9, 15, .25) 54%, rgba(7, 9, 15, .1) 100%),
+                linear-gradient(0deg, var(--hd-ground) 0%, rgba(7, 9, 15, .85) 30%, transparent 47%),
+                var(--hd-haze-top); }
+  .tint { position: absolute; inset: 0; pointer-events: none; background: var(--acc); opacity: .045; }
+  [data-hd-mode="alert"] .tint, [data-hd-mode="hack"] .tint { display: none; }
+  html.lite .bg-glow { display: none; }
+  .hd-edge-rails::before { left: 22px; } .hd-edge-rails::after { right: 22px; }
+
+  /* ---- top band: name, the now-playing radio (or remote hints for a moment), clock ---- */
+  .top { position: absolute; left: 96px; right: 96px; top: 40px; height: 124px; display: flex; align-items: flex-end; gap: 28px; }
+  .top > .brand, .top > .clock, .top > .wx { flex: none; }
+  .top > .mid { flex: 1; min-width: 0; }
+  .top.has-wx .brand .hd-barcode, .top.has-wx .radio__time { display: none; }
+  .top.has-wx .radio { grid-template-columns: auto 1fr auto auto; gap: 16px; }
+  .brand__mark { display: block; font-size: 40px; line-height: 1; color: var(--hd-text-strong); }
+  .brand__row { display: flex; align-items: center; gap: 18px; margin-top: 10px; }
+  .brand__row .hd-barcode { width: 120px; height: 16px; }
+  .mid { position: relative; height: 84px; align-self: end; }
+  .clock { display: grid; justify-items: end; gap: 4px; }
+  .clock__time { color: var(--hd-act); font-size: 76px; }
+  .clock__time .hd-num__frac { color: var(--hd-act-dim); }
+  .clock__time .hd-num__unit { color: var(--hd-chrome); font-size: .34em; letter-spacing: .1em; }
+  .top-rule { position: absolute; left: 96px; right: 96px; top: 176px; }
+
+  /* the now-playing strip, read like a car radio */
+  .radio { position: absolute; inset: 0; display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 22px;
+           padding: 0 18px 0 22px; --cut: var(--hd-cut-s); --bw: 1.5px; --line: rgba(var(--hd-chrome-rgb), .45); --fill: var(--hd-plate);
+           --spine: 6px; --spine-c: var(--app); transition: opacity var(--hd-t-base) var(--hd-ease-out); }
+  .radio__band { display: grid; justify-items: start; line-height: 1; gap: 4px; }
+  .radio__band .hd-label { font-size: 16px; color: var(--app); }
+  .radio__freq { font-size: 40px; color: var(--hd-act); }
+  .radio__main { display: grid; min-width: 0; gap: 2px; }
+  .radio__station { font-family: var(--hd-font-device); font-size: 18px; letter-spacing: var(--hd-tr-device); text-transform: uppercase; color: var(--hd-text-strong); white-space: nowrap; }
+  .radio__track { font-size: 22px; color: var(--hd-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .radio__track b { color: var(--hd-act); font-weight: 600; }
+  .radio__meter { display: flex; align-items: flex-end; gap: 3px; height: 36px; }
+  .radio__meter i { width: 6px; height: var(--h, 20%); background: var(--app); transition: height 380ms var(--hd-ease-out); }
+  .radio__meter i:nth-child(n+9) { background: var(--hd-signal); }
+  .radio__time { font-size: 20px; color: var(--hd-text-meta); }
+  .radio__pp { min-height: 52px; min-width: 52px; padding: 0 12px; }
+  .radio__pp.is-focus { --line: var(--hd-focus); outline: 2px solid var(--hd-focus); outline-offset: 3px; }
+  .pp { display: inline-block; width: 18px; height: 20px; background: currentColor; clip-path: polygon(0 0, 36% 0, 36% 100%, 0 100%, 0 0, 64% 0, 100% 0, 100% 100%, 64% 100%); }
+  .radio.is-paused .pp { clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .radio.is-paused .radio__meter i { height: 8% !important; }
+  .hints { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 30px; opacity: 0; pointer-events: none;
+           transition: opacity var(--hd-t-slow) var(--hd-ease-out); }
+  .hints .hd-hint { font-size: 22px; color: var(--hd-chrome); }
+  .top.show-hints .hints { opacity: 1; }
+  .top.show-hints .radio, .stage:has(.hd-toast) .radio, .stage:has(.hd-toast) .hints { opacity: 0; pointer-events: none; }
+
+  /* ---- what you are on, with what you would do there ---- */
+  .hero { position: absolute; left: 96px; top: 198px; width: 980px; height: 290px; padding-left: 34px; }
+  .hero.hd-sweep { overflow: visible; }
+  .hero__spine { position: absolute; left: 0; top: 4px; bottom: 4px; width: 8px; background: var(--app);
+                 clip-path: polygon(0 0, 100% 8px, 100% 100%, 0 100%); transition: background-color var(--hd-t-base) var(--hd-ease-out); }
+  .hero__meta { display: flex; align-items: center; gap: 16px; }
+  .hero__meta .hd-mono { color: var(--hd-act-dim); font-size: 24px; }
+  .hero__title { margin-top: 30px; white-space: nowrap; font-size: 96px; }
+  /* the echo copies only show for a moment when the app changes, and faintly, so the name reads cleanly */
+  .hero__title .hd-glitch__echo { --a: .07; opacity: 0; }
+  .hero__title.is-glitching .hd-glitch__echo { opacity: var(--a); }
+  .hero__desc { margin: 6px 0 0; color: var(--hd-text); white-space: nowrap; }
+  .hero__next { display: flex; align-items: center; gap: 16px; margin-top: 16px; min-height: 48px; padding: 8px 18px 8px 14px; width: max-content; max-width: 940px;
+                --cut: var(--hd-cut-s); --bw: 1px; --line: rgba(var(--hd-act-rgb), .5); --fill: rgba(var(--hd-act-rgb), .06); }
+  .hero__next .hd-label { color: var(--hd-act); font-size: 20px; }
+  .hero__next .t { font-size: 26px; color: var(--hd-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hero__next .ok { display: inline-flex; align-items: center; gap: 8px; color: var(--hd-chrome); font-size: 22px; margin-left: 6px; }
+
+  /* ---- section bar ---- */
+  .bar { position: absolute; left: 96px; right: 96px; top: 506px; height: 50px; display: flex; align-items: center; gap: 22px; }
+  .bar .hd-tabs { gap: 30px; padding: 0; overflow: visible; }
+  .bar .hd-tab { min-height: 50px; padding: 0 .4em; }
+  .bar .hd-tab.is-focus { outline: 2px solid var(--hd-focus); outline-offset: 4px; }
+  .bar__rule { flex: 1; height: 1px; background: var(--hd-hairline); }
+  .barbtn { min-height: 50px; font-size: 22px; }
+  .barbtn.is-focus { --line: var(--hd-focus); outline: 2px solid var(--hd-focus); outline-offset: 4px; }
+
+  /* ---- deck ---- */
+  .deck { position: absolute; left: 96px; top: 566px; width: 1728px; height: 466px; perspective: 1800px; perspective-origin: 50% 30%; }
+  .section { position: absolute; inset: 0; transform-style: preserve-3d;
+             transition: transform var(--hd-t-slow) var(--hd-ease-snap), opacity var(--hd-t-slow) var(--hd-ease-out); }
+  .section.is-off { opacity: 0; pointer-events: none; }
+  .row { position: relative; margin-bottom: 18px; transform: translateZ(var(--z, 0px)) rotateY(var(--lean, 0deg));
+         transition: transform var(--hd-t-base) var(--hd-ease-out), opacity var(--hd-t-base) var(--hd-ease-out); }
+  .row:not(.is-active) { --z: -90px; opacity: .62; }
+  .deck.on-bar .row { --z: -40px; opacity: .8; }
+  .row__title { display: flex; align-items: center; gap: 16px; margin: 0 0 28px; font-size: 22px; position: relative; z-index: 2; }
+  .row__title::after { content: ""; flex: 1; height: 1px; background: var(--hd-hairline); }
+  .row__title .hd-mono { order: 2; font-size: 18px; color: var(--hd-chrome-dim); }
+  .tiles { display: flex; gap: 28px; align-items: flex-start; }
+  .row[data-row="fav"] { margin-bottom: 28px; }
+  .tiles--apps { gap: 13px; flex-wrap: wrap; row-gap: 16px; width: 1728px; }
+  /* the clip reaches 48px past each side so the row lean never trims a group title; the last row can sit above the fade */
+  .apps-view { position: absolute; top: 0; bottom: 0; left: -48px; right: -48px; padding: 0 48px; overflow: hidden;
+               -webkit-mask-image: linear-gradient(180deg, #000 90%, transparent); mask-image: linear-gradient(180deg, #000 90%, transparent); }
+  .apps-scroll { perspective: 1800px; perspective-origin: 50% 0; transition: transform var(--hd-t-slow) var(--hd-ease-out); }
+  /* Apps rows are not pushed back in depth (that drew every row below up onto the focused one); an unfocused row dims
+     and shrinks a touch around its own center, so labels and tiles below never move up into the row you are on */
+  .apps-scroll .row { margin-bottom: 22px; transform: rotateY(var(--lean, 0deg)) scale(var(--sc, 1)); transform-origin: 50% 50%; }
+  .apps-scroll .row:not(.is-active), .deck.on-bar .apps-scroll .row { --sc: .97; }
+
+  /* tiles: an app's art shown whole, or the auto badge for anything without art; same focus for both */
+  .art, .badge { position: relative; flex: none; width: 196px; height: 196px; transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+  .art img { width: 100%; height: 100%; display: block; opacity: .74; transition: opacity var(--hd-t-fast) linear; }
+  .hd-brackets__layer { opacity: 0; transition: opacity var(--hd-t-instant) linear; }
+  .art .hd-brackets__layer, .badge .hd-brackets__layer { inset: -6px; }
+  .art.is-focus, .badge.is-focus { transform: translateY(-8px) scale(1.05); }
+  .art.is-focus img { opacity: 1; filter: drop-shadow(0 0 14px var(--app)); }
+  .badge.is-focus .badge__frame { filter: drop-shadow(0 0 12px var(--c)); }
+  html.lite .art.is-focus img, html.lite .badge.is-focus .badge__frame { filter: none; }
+  .is-focus > .hd-brackets__layer { opacity: 1; }
+  .art--sm, .badge--sm { width: 130px; height: 130px; }
+  .art--xs, .badge--xs { width: 92px; height: 92px; }
+  .badge--xs { font-size: 9.2px; }
+
+  /* the auto badge: dark plate, cut corners, ticks, caption, framed in the icon's own main color */
+  .badge { font-size: 19.6px; --c: #8f8889; }
+  .badge--sm { font-size: 13px; }
+  .badge__frame { position: absolute; inset: 0; opacity: .74; transition: opacity var(--hd-t-fast) linear; }
+  .badge.is-focus .badge__frame { opacity: 1; }
+  .badge__frame::before { content: ""; position: absolute; inset: 0; background: var(--c); clip-path: var(--oct); }
+  .badge__frame::after { content: ""; position: absolute; inset: .14em; background: linear-gradient(180deg, #14151f, #0b0c12 70%); clip-path: var(--oct); }
+  .badge__in { position: absolute; inset: 0; z-index: 1; }
+  .badge__ticks { position: absolute; right: 1.3em; top: .5em; width: 1.5em; height: .28em;
+                  background: repeating-linear-gradient(90deg, var(--c) 0 .28em, transparent .28em .5em); transform: skewX(-30deg); }
+  .badge__side { position: absolute; left: .5em; top: 1.8em; width: .24em; height: 1.5em;
+                 background: repeating-linear-gradient(180deg, var(--c) 0 .26em, transparent .26em .48em); }
+  .badge__port { position: absolute; left: 1.2em; top: .55em; font: 400 .62em/1 var(--hd-font-mono); color: var(--c); letter-spacing: .06em; }
+  .badge__emblem { position: absolute; left: 13%; right: 13%; top: 13%; height: 54%; display: grid; place-items: center; }
+  .badge__emblem img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+  .badge__init { font-family: var(--hd-font-device); font-size: 2.3em; line-height: 1; color: var(--c); letter-spacing: .06em; }
+  .badge__cap { position: absolute; left: 11%; right: 11%; bottom: 8%; height: 19%; display: grid; place-items: center;
+                border-top: .07em solid var(--c); font: 500 .98em/1 var(--hd-font-ui); font-stretch: 87.5%; color: #e9eef2;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge__cap::before, .badge__cap::after { content: ""; position: absolute; bottom: 28%; width: .7em; height: .12em; background: var(--c); opacity: .8; }
+  .badge__cap::before { left: 0; } .badge__cap::after { right: 0; }
+
+  /* Scan (search) entry, first in the favorites row */
+  .scan { position: relative; flex: none; width: 150px; height: 196px; display: grid; place-items: center; align-content: center; gap: 14px;
+          --cut: var(--hd-cut-m); --bw: 1.5px; --line: rgba(var(--hd-chrome-rgb), .3); --fill: rgba(12, 12, 22, .62);
+          transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+  .scan.is-focus { --line: var(--hd-focus); --fill: var(--hd-surface); transform: translateY(-8px); }
+  .scan .hd-brackets__layer { inset: -6px; }
+  .glass { width: 54px; height: 54px; position: relative; }
+  .glass::before { content: ""; position: absolute; left: 0; top: 0; width: 36px; height: 36px; border: 5px solid var(--hd-act); border-radius: 50%; box-sizing: border-box; }
+  .glass::after { content: ""; position: absolute; left: 31px; top: 33px; width: 24px; height: 6px; background: var(--hd-act); transform: rotate(45deg); transform-origin: 0 50%; }
+  .scan__name { font-size: 24px; text-transform: uppercase; letter-spacing: var(--hd-tr-label); color: var(--hd-text-strong); font-weight: 600; }
+  .mic { display: inline-block; width: 16px; height: 26px; position: relative; vertical-align: middle; }
+  .mic::before { content: ""; position: absolute; left: 3px; top: 0; width: 10px; height: 16px; border-radius: 5px; background: currentColor; }
+  .mic::after { content: ""; position: absolute; left: 0; top: 9px; width: 16px; height: 11px; border: 2px solid currentColor; border-top: 0; border-radius: 0 0 8px 8px; box-sizing: border-box; }
+  .scan__mic { display: inline-flex; align-items: center; gap: 6px; font-size: 18px; color: var(--hd-chrome); letter-spacing: var(--hd-tr-label); text-transform: uppercase; }
+
+  /* the live input tile: appears by itself for whichever input has a signal */
+  .live { position: relative; flex: none; width: 400px; height: 196px; margin-left: auto; display: grid; grid-template-columns: 120px 1fr; gap: 6px 18px;
+          align-items: center; padding: 18px 20px 16px 22px;
+          --cut: var(--hd-cut-m); --bw: 1.5px; --line: rgba(var(--hd-chrome-rgb), .3); --fill: rgba(12, 12, 22, .66); --spine: 5px; --spine-c: var(--app);
+          transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+  .live[hidden] { display: none; }
+  .live.is-focus { --line: var(--hd-focus); --fill: var(--hd-surface); transform: translateY(-8px); }
+  .live .hd-brackets__layer { inset: -6px; }
+  .live img { width: 120px; height: 120px; object-fit: contain; grid-row: 1 / 4; }
+  .live__name { font-size: 27px; line-height: 1.05; font-weight: 600; text-transform: uppercase; color: var(--hd-text-strong); letter-spacing: .02em;
+                overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .live__sub { font-size: 20px; color: var(--hd-text-meta); white-space: nowrap; }
+  .live__ok { font-size: 20px; color: var(--hd-chrome); display: inline-flex; align-items: center; gap: 8px; }
+
+  /* continue watching */
+  .cw { --cut: var(--hd-cut-m); --bw: 1.5px; --line: rgba(var(--hd-chrome-rgb), .18); --fill: rgba(12, 12, 22, .62);
+        flex: none; width: 324px; height: 130px; padding: 16px 18px 14px 22px; display: grid; grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto 1fr auto; column-gap: 12px; transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+  .cw.is-focus { --bw: 2px; --line: var(--hd-focus); --fill: var(--hd-surface); transform: translateY(-8px); }
+  .cw__strip { position: absolute; left: 2px; top: 2px; bottom: 2px; width: 5px; background: var(--app); }
+  .cw__title { font-size: 26px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--hd-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cw__sub { grid-column: 1; font-size: 20px; color: var(--hd-text-meta); white-space: nowrap; }
+  .cw__thumb { grid-row: 1 / 3; grid-column: 2; width: 58px; height: 58px; object-fit: contain; opacity: .9; }
+  .cw__bar { grid-column: 1 / -1; align-self: end; height: 6px; background: rgba(var(--hd-chrome-rgb), .18); position: relative; }
+  .cw__bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); background: var(--app); }
+  .cw__left { grid-column: 1 / -1; font-size: 18px; color: var(--hd-chrome); letter-spacing: var(--hd-tr-label); text-transform: uppercase; margin-top: 6px; }
+
+  .stage .hd-toasts { top: 34px; right: 680px; width: 540px; }
+
+  /* ---- overlays ---- */
+  .scrim { position: absolute; inset: 0; display: grid; place-items: center; background: var(--hd-c-scrim); }
+  .scrim[hidden] { display: none; }
+  .hd-btn.is-focus { --line: var(--hd-focus); outline: 3px solid var(--hd-focus); outline-offset: 5px; }
+  .hd-btn[hidden] { display: none; }
+  .ovl { --fill: var(--hd-surface); padding: 28px 40px 30px 56px; }
+  .ovl .hd-panel__head { font-size: 26px; }
+
+  /* Jump To */
+  .jump { position: absolute; z-index: 290; right: 96px; top: 190px; width: 680px; display: none; }
+  .jump.on { display: block; animation: jump-in var(--hd-t-base) var(--hd-ease-out) both; }
+  @keyframes jump-in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+  .jump .hd-panel { --fill: var(--hd-surface); padding: 22px 28px 20px 52px; }
+  .jump .hd-panel__head { font-size: 26px; }
+  .jl { --cut: var(--hd-cut-s); --line: transparent; --fill: transparent; display: grid; grid-template-columns: 52px 1fr auto; align-items: center;
+        gap: 16px; min-height: 62px; padding: 3px 12px; }
+  .jl img { width: 46px; height: 46px; }
+  .jl__ico { width: 46px; height: 46px; display: grid; place-items: center; }
+  .jl__ico i { width: 24px; height: 24px; transform: rotate(45deg); border: 2px solid var(--hd-chrome); }
+  .jl__name { font-size: 26px; text-transform: uppercase; letter-spacing: var(--hd-tr-head); color: var(--hd-chrome); font-weight: 500; }
+  .jl__val { display: flex; align-items: center; gap: 14px; font-size: 26px; color: var(--hd-act); white-space: nowrap; }
+  .jl__val .arr { color: var(--hd-chrome-dim); font-family: var(--hd-font-num); font-weight: 600; }
+  .jl__sw { width: 22px; height: 22px; background: var(--sw); clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%); }
+  .jl.is-focus { --line: var(--hd-act-line); --fill: rgba(var(--hd-act-rgb), .08); }
+  .jl.is-focus .jl__name { color: var(--hd-text-strong); }
+  .jl.is-focus .arr { color: var(--hd-act); }
+  .jump__sep { height: 1px; background: var(--hd-hairline); margin: 6px 0; }
+  .jump__foot { display: flex; gap: 26px; margin-top: 12px; }
+
+  /* options menu (hold OK) */
+  .opts { position: absolute; z-index: 280; width: 520px; display: none; }
+  .opts.on { display: block; }
+  .opts .hd-panel { padding: 22px 26px 22px 46px; --fill: var(--hd-surface); }
+  .opts .hd-panel__head { font-size: 24px; }
+  .opts .hd-meter { margin-bottom: 12px; }
+  .opts .hd-menu__item { min-height: 56px; font-size: 26px; --cut: var(--hd-cut-s); }
+  .opts .hd-menu__item.is-focus { color: var(--hd-act); --line: var(--hd-act-line); --fill: rgba(var(--hd-act-rgb), .08); }
+  .opts .hd-menu__item.is-focus .hd-menu__tick { opacity: 1; background: currentColor; }
+  .opts .hd-menu__item.is-blocked { color: var(--hd-c-blocked-ink); --fill: var(--hd-chrome-deep); --pattern: var(--hd-hatch-block); }
+  .opts .hd-menu__item .l { display: flex; align-items: center; gap: 14px; }
+  .opts .hd-menu__item .v { color: var(--hd-act); font-size: 24px; display: inline-flex; gap: 10px; }
+  .opts .hd-key { font-size: 22px; }
+  .opts__why { font-size: 20px; color: var(--hd-c-blocked-ink); min-height: 1.3em; margin-top: 8px; }
+
+  /* art with one scan line crossing it */
+  .scanart { position: relative; overflow: hidden; }
+  .scanart img { width: 100%; height: 100%; display: block; object-fit: contain; }
+  .scanart::after { content: ""; position: absolute; left: 0; right: 0; top: -4px; height: 3px; opacity: 0;
+                    background: var(--glow, var(--hd-act)); box-shadow: 0 0 14px var(--glow, var(--hd-act)); }
+  .scanart.go::after { animation: scanart 1s var(--hd-ease-in-out) 1 both; }
+  @keyframes scanart { 0% { top: -4px; opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+  html.lite .scanart::after { display: none; }
+
+  /* input detected: arrives in the corner like an incoming call */
+  .call { position: absolute; z-index: 300; right: 96px; bottom: 56px; width: 600px; display: none; column-gap: 22px; padding: 22px 26px;
+          --line: var(--hd-signal); --fill: var(--hd-surface); --spine: 6px; --spine-c: var(--hd-signal); }
+  .call.on { display: grid; animation: call-in var(--hd-t-base) var(--hd-ease-out) both; }
+  @keyframes call-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  .call .hd-portrait { width: 110px; --line: var(--hd-signal); grid-row: 2 / 4; }
+  .call .hd-portrait img { width: 74%; height: 74%; object-fit: contain; }
+  .call .hd-call__label { color: var(--hd-signal); font-size: 20px; display: flex; justify-content: space-between; }
+  .call .hd-call__name { font-size: 34px; color: var(--hd-text-strong); }
+  .call__text { font-size: 22px; color: var(--hd-text); }
+  .call .hd-wave { color: var(--hd-signal); height: 22px; }
+  .call .hd-wave i { animation: wave 1.2s var(--hd-ease-in-out) infinite alternate; }
+  .call .hd-wave i:nth-child(2n) { animation-delay: -.6s; } .call .hd-wave i:nth-child(3n) { animation-delay: -.3s; }
+  @keyframes wave { from { height: 25%; } to { height: 100%; } }
+  .call .hd-call__actions { margin-top: 8px; gap: 18px; }
+  .call .hd-btn { min-height: 56px; font-size: 24px; padding: 0 30px; }
+
+  /* Info as a scanner */
+  .info { z-index: 320; }
+  .info__box { width: 1320px; height: 640px; position: relative; padding: 26px 40px 30px 56px; --fill: var(--hd-surface); }
+  .info__art { position: absolute; left: 110px; top: 130px; width: 380px; height: 380px; }
+  .info__art .art, .info__art .badge { width: 380px; height: 380px; font-size: 38px; }
+  .info__art .art img { opacity: 1; }
+  .info__art .badge__frame { opacity: 1; }
+  .info__art .hd-brackets { position: absolute; inset: -18px; }
+  .info__lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .info__tags { position: absolute; left: 640px; top: 120px; display: grid; gap: 22px; }
+  .info__tags .hd-tag { font-size: 24px; min-height: 52px; gap: 18px; }
+  .info__tags .hd-tag b { color: var(--hd-act); font-weight: 600; }
+  .info__close { position: absolute; right: 40px; bottom: 30px; }
+
+  /* Scan (search) overlay */
+  .search { z-index: 330; }
+  .search__box { width: 1320px; }
+  .search__q { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+  .search__field { flex: 1; min-height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 20px; font-size: 32px; color: var(--hd-text-strong);
+                   --cut: var(--hd-cut-s); --line: var(--hd-act-line); --fill: rgba(var(--hd-act-rgb), .05); letter-spacing: .04em; }
+  .search__field .ph { color: var(--hd-text-meta); font-size: 26px; }
+  .search__field .caret { width: 3px; height: 34px; background: var(--hd-act); }
+  .search__heard { font-size: 22px; color: var(--hd-chrome); min-width: 220px; }
+  .keys { display: grid; grid-template-columns: repeat(10, 92px); gap: 10px; margin-bottom: 22px; }
+  .skey { min-height: 58px; font-size: 26px; padding: 0; }
+  .skey--wide { grid-column: span 2; }
+  .search__res { display: flex; gap: 18px; min-height: 150px; align-items: center; }
+  .search__none { font-size: 24px; color: var(--hd-text-meta); }
+
+  /* on-screen keyboard for custom names */
+  .kbd { z-index: 950; }
+  .kbd__box { width: 1160px; }
+  .kbd .search__field { margin: 6px 0 20px; }
+  .kbd__foot { display: flex; align-items: center; gap: 24px; }
+  .kbd__foot .sp { flex: 1; }
+
+  /* weather readout (an opt-in online extra), beside the clock */
+  .wx { display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 3px; align-items: center; align-self: end; padding-bottom: 2px;
+        transition: opacity var(--hd-t-slow) var(--hd-ease-out); }
+  .wx[hidden] { display: none; }
+  .wx.is-stale { opacity: .5; }
+  .wx__head { grid-column: 1 / -1; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }
+  .wx__ico { width: 48px; height: 48px; color: var(--hd-act); }
+  .wx__ico svg { width: 100%; height: 100%; display: block; }
+  .wx__temp { font-family: var(--hd-font-num); font-weight: 600; font-size: 50px; line-height: .9; color: var(--hd-text-strong); white-space: nowrap; }
+  .wx__temp small { font-size: .45em; color: var(--hd-act-dim); margin-left: 2px; }
+  .wx__cond { grid-column: 1 / -1; font-size: 18px; letter-spacing: var(--hd-tr-label); text-transform: uppercase; color: var(--hd-chrome); white-space: nowrap; }
+  .wx__city { grid-column: 1 / -1; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }
+
+  /* Online extras: everything is offline until switched on */
+  .extras { z-index: 300; }
+  .ex__box { width: 1180px; }
+  .ex__lead { font-size: 24px; color: var(--hd-text-strong); margin: 0 0 14px; }
+  .exl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 24px; min-height: 76px; padding: 10px 18px; margin-bottom: 8px;
+         --cut: var(--hd-cut-s); --line: rgba(var(--hd-chrome-rgb), .25); --fill: transparent; }
+  .exl.is-focus { --line: var(--hd-act-line); --fill: rgba(var(--hd-act-rgb), .08); }
+  .exl__name { font-size: 26px; text-transform: uppercase; letter-spacing: var(--hd-tr-head); color: var(--hd-text-strong); font-weight: 600; }
+  .exl__desc { grid-column: 1; font-size: 20px; color: var(--hd-text-meta); }
+  .exl__val { grid-column: 2; grid-row: 1 / 3; font-size: 26px; color: var(--hd-act); display: flex; gap: 12px; white-space: nowrap; }
+  .exl--sub { margin-left: 44px; min-height: 60px; }
+  .exl--off { opacity: .45; }
+  .exl--off .exl__val { color: var(--hd-text-meta); }
+
+  /* first-run setup */
+  .setup { z-index: 900; background: rgba(5, 7, 13, .94); }
+  .setup__box { width: 1640px; min-height: 760px; display: grid; align-content: start; gap: 20px; }
+  .setup__steps { display: flex; gap: 40px; font-size: 22px; text-transform: uppercase; letter-spacing: var(--hd-tr-label); color: var(--hd-chrome); }
+  .setup__steps .on { color: var(--hd-act); }
+  .setup__title { font-size: 44px; color: var(--hd-text-strong); margin: 4px 0 0; font-weight: 600; }
+  .setup__text { font-size: 24px; color: var(--hd-text); margin: 0; }
+  .setup__grid { display: flex; flex-wrap: wrap; gap: 12px; width: 1528px; }
+  .setup__grid .is-picked::after { content: "✓"; position: absolute; right: -6px; top: -10px; width: 34px; height: 34px; display: grid; place-items: center;
+                                   background: var(--hd-act); color: var(--hd-on-act); font-size: 22px; font-weight: 700; z-index: 2;
+                                   clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%); }
+  .sw { width: 170px; height: 150px; display: grid; place-items: end start; padding: 14px; font-size: 22px; text-transform: uppercase; letter-spacing: var(--hd-tr-label);
+        color: var(--hd-c-ink-dark); font-weight: 700; background: var(--sw); clip-path: var(--oct); position: relative; transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+  .sw.is-focus { transform: translateY(-8px) scale(1.05); outline: 3px solid #fff; outline-offset: 4px; }
+  .sw.is-picked::after { content: "✓"; position: absolute; right: 14px; top: 10px; font-size: 30px; }
+  .nl { display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 20px; min-height: 64px; padding: 0 18px; width: 900px;
+        --cut: var(--hd-cut-s); --line: rgba(var(--hd-chrome-rgb), .25); --fill: transparent; }
+  .nl.is-focus { --line: var(--hd-act-line); --fill: rgba(var(--hd-act-rgb), .08); }
+  .nl__port { font-size: 24px; color: var(--hd-chrome); text-transform: uppercase; letter-spacing: var(--hd-tr-label); }
+  .nl__val { font-size: 28px; color: var(--hd-act); display: flex; gap: 14px; }
+  .setup__foot { display: flex; gap: 24px; align-items: center; margin-top: 10px; }
+  .setup__foot .sp { flex: 1; }
+
+
+  /* linking screen */
+  .launch { z-index: 600; background-color: var(--hd-ground); background-image: var(--hd-haze-top), var(--hd-ground-image); }
+  .link { position: relative; width: 1500px; }
+  .link__halo { position: absolute; inset: -260px -300px; pointer-events: none; background-color: var(--glow); opacity: .16;
+                -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent); }
+  html.lite .link__halo { display: none; }
+  .link .hd-panel { --spine-c: var(--glow); padding: 40px 48px 40px 68px; display: grid; grid-template-columns: 1fr 360px; gap: 22px 48px; align-items: center; }
+  .link__main { display: grid; gap: 22px; min-width: 0; }
+  .link__title { margin-top: 56px; font-size: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .link .scanart { width: 360px; height: 360px; }
+  .link .scanart > .badge { width: 360px; height: 360px; font-size: 36px; }
+  .link .scanart .badge__frame { opacity: 1; }
+  .link .hd-progress { padding-top: 26px; }
+  .link .hd-progress__strip { height: 10px; }
+  .link .hd-progress__foot { font-size: 14px; }
+  .link .hd-log { font-size: 22px; gap: 6px; min-height: 152px; }
+  .link__steps { display: flex; justify-content: space-between; }
+
+  .standby { position: absolute; inset: 0; z-index: 1200; background: var(--hd-c-void); opacity: 0; pointer-events: none;
+             transition: opacity var(--hd-t-slow) var(--hd-ease-out); }
+  .standby.on { opacity: 1; pointer-events: auto; }
+  .standby__pos { position: absolute; left: 0; top: 0; width: 760px; display: grid; gap: 10px; padding: 26px 34px; transition: opacity 600ms var(--hd-ease-in-out); }
+  .standby__pos.fade { opacity: 0; }
+  .standby__clock { color: var(--hd-chrome); font-size: 200px; text-shadow: var(--hd-glow-text); }
+  .standby__clock .hd-num__frac { color: var(--hd-chrome-dim); }
+
+  .boot { position: absolute; inset: 0; z-index: 1300; background: var(--hd-c-void); display: grid; place-items: center;
+          transition: opacity var(--hd-t-slow) var(--hd-ease-out); }
+  .boot.done { opacity: 0; pointer-events: none; }
+  .boot__box { width: 860px; display: grid; gap: 22px; }
+  .boot__title { font-size: 64px; color: var(--hd-text-strong); margin-top: 40px; }
+  .boot .hd-log { font-size: 22px; gap: 6px; min-height: 150px; }
+  .boot__build, .jump__ver { font-family: var(--hd-font-mono); font-weight: 400; text-transform: uppercase;
+                             letter-spacing: .12em; color: var(--hd-text-meta); }
+  .boot__build { font-size: 16px; opacity: .6; }
+  .jump__ver { font-size: 15px; opacity: .8; }
+  /* Jump To has fifteen lines: tighter rows, and a list that scrolls to the focused line if it ever runs long */
+  .jump { top: 172px; }
+  .jl { min-height: 46px; padding: 1px 12px; }
+  .jl img, .jl__ico { width: 38px; height: 38px; }
+  .jl__name, .jl__val { font-size: 23px; }
+  #jList { max-height: 730px; overflow: hidden; }
+</style>
+<link rel="stylesheet" href="tv.css">
+</head>
+<body>
+<div class="stage hd-root">
+  <div class="ground"></div>
+  <div class="bg-glow" id="bgGlow"></div>
+  <div class="bg" id="bgA"><img alt=""></div>
+  <div class="bg" id="bgB"><img alt=""></div>
+  <div class="bg-shade"></div>
+  <div class="tint"></div>
+  <div class="hd-edge-rails"></div>
+
+  <header class="top" id="top">
+    <div class="brand">
+      <span class="brand__mark hd-device" data-hd-glitch-text data-layers="2" data-glitch-on="mode">Home Deck</span>
+      <div class="brand__row">
+        <span class="hd-screen-sub" id="brandSub" style="margin:0">Living room // 4K display</span>
+        <span data-hd-code data-kind="barcode" data-seed="home-deck-3"></span>
+      </div>
+    </div>
+    <div class="mid">
+      <div class="radio hd-frame" id="radio">
+        <span class="radio__band"><span class="hd-label" id="rApp">Spotify</span><span class="radio__freq hd-num" id="rFreq"></span></span>
+        <span class="radio__main"><span class="radio__station" id="rStation">Night Drive FM</span><span class="radio__track"><b id="rTrack">Glass Static</b> // <span id="rArtist">Halcyon Wire</span></span></span>
+        <span class="radio__meter" id="rMeter" aria-hidden="true"></span>
+        <span class="radio__time hd-mono" id="rTime">1:42</span>
+        <button class="hd-btn hd-btn--quiet radio__pp" type="button" data-f id="rPlay" aria-label="Play or pause"><span class="pp"></span></button>
+      </div>
+      <div class="hints" id="hints">
+        <span class="hd-hint"><span class="hd-key hd-key--word">OK</span>Open</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word hd-key--hold">OK</span>Hold: options</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">Back</span>Back</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word hd-key--hold">Back</span>Hold: Jump To</span>
+      </div>
+    </div>
+    <div class="wx" id="wx" hidden aria-live="polite">
+      <span class="wx__head">Signal // weather feed</span>
+      <span class="wx__ico" id="wxIco" aria-hidden="true"></span><span class="wx__temp" id="wxTemp"></span>
+      <span class="wx__cond" id="wxCond"></span>
+      <span class="wx__city" id="wxCity"></span>
+    </div>
+    <div class="clock">
+      <span class="clock__time hd-num hd-num--split"><span class="hd-num__int" id="clkHM">0:00</span><span class="hd-num__frac" id="clkS">:00</span><span class="hd-num__unit" id="clkAP">am</span></span>
+      <span class="hd-label"><span style="color:var(--hd-chrome)">Local time //</span> <span class="hd-label--meta" id="clkDate"></span></span>
+    </div>
+  </header>
+  <hr class="hd-rule top-rule">
+
+  <section class="hero hd-sweep" id="hero" aria-live="polite">
+    <div class="hero__spine" aria-hidden="true"></div>
+    <div class="hero__meta">
+      <span class="hd-label hd-label--act" id="hLabel">Now on</span>
+      <span class="hd-chip" id="hChip">Streaming</span>
+      <span class="hd-mono" id="hIdx"></span>
+    </div>
+    <h1 class="hd-title-card hero__title" id="hTitle" data-hd-glitch-text data-layers="2" data-glitch-on="mode">Netflix</h1>
+    <p class="hd-body hero__desc" id="hDesc"></p>
+    <div class="hero__next hd-frame" id="hNext"><span class="hd-label" id="nLabel">Continue</span><span class="t" id="nText"></span><span class="ok"><span class="hd-key hd-key--word">OK</span><span id="nAct">Open</span></span></div>
+  </section>
+
+  <nav class="bar">
+    <div class="hd-tabs">
+      <span class="hd-tab" data-f data-tab="0" aria-selected="true">Home</span>
+      <span class="hd-tab" data-f data-tab="1" aria-selected="false">Apps</span>
+      <span class="hd-tab" data-f data-tab="2" aria-selected="false" data-right="#helpBtn">Inputs</span>
+    </div>
+    <span class="bar__rule"></span>
+    <button class="hd-btn hd-btn--quiet barbtn" type="button" data-f id="helpBtn" data-left='[data-tab="2"]' data-right="#jumpBtn">? Help</button>
+    <button class="hd-btn hd-btn--quiet barbtn" type="button" data-f id="jumpBtn" data-left="#helpBtn">Jump To</button>
+  </nav>
+
+  <div class="deck" id="deck">
+    <div class="section" data-sec="0">
+      <div class="row" data-row="fav"><h2 class="hd-h row__title"><span id="name-fav">Favorites</span> <span class="hd-mono" id="cnt-fav">05</span></h2>
+        <div class="tiles" id="favRow">
+          <div class="scan hd-frame" data-fi data-scan><i class="hd-brackets__layer" aria-hidden="true"></i>
+            <span class="glass" aria-hidden="true"></span><span class="scan__name">Scan</span><span class="scan__mic"><span class="mic" aria-hidden="true"></span>Voice</span></div>
+          <div class="tiles" id="fav"></div>
+          <div class="live hd-frame" data-fi data-live id="live" hidden><i class="hd-brackets__layer" aria-hidden="true"></i>
+            <img id="liveImg" alt=""><span class="hd-chip hd-chip--new" style="justify-self:start">Signal</span>
+            <span class="live__name" id="liveName">Game console</span><span class="live__sub" id="liveSub">HDMI 1 // 4K 120</span></div>
+        </div>
+      </div>
+      <div class="row" data-row="cw"><h2 class="hd-h row__title"><span id="name-cw">Jump back in</span> <span class="hd-mono" id="cnt-cw">05</span></h2><div class="tiles" id="cw"></div></div>
+    </div>
+    <div class="section is-off" data-sec="1">
+      <div class="apps-view"><div class="apps-scroll" id="apps"></div></div>
+    </div>
+    <div class="section is-off" data-sec="2">
+      <div class="row" data-row="inp"><h2 class="hd-h row__title">Inputs and settings <span class="hd-mono">07</span></h2><div class="tiles" id="inp"></div></div>
+    </div>
+  </div>
+
+  <div class="hd-toasts"></div>
+
+  <div class="jump" id="jump">
+    <div class="hd-panel hd-panel--spine-act">
+      <div class="hd-panel__head">Jump To <span class="jump__ver">Home Deck v0.1 // glidian.dev</span></div>
+      <div id="jList"></div>
+      <div class="jump__foot">
+        <span class="hd-hint"><span class="hd-key">&larr;</span><span class="hd-key">&rarr;</span>Change</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">OK</span>Pick</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">Back</span>Close</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="opts" id="opts">
+    <div class="hd-panel hd-panel--spine-act">
+      <div class="hd-panel__head"><span id="oTitle">Options</span><span data-hd-code data-kind="serial" data-mask="XX-00" data-seed="opts3"></span></div>
+      <div id="oCharge" data-hd-meter data-label="Charge" data-value="8" data-max="8" data-segments="8"></div>
+      <div class="hd-menu" id="oList"></div>
+      <div class="opts__why" id="oWhy"></div>
+    </div>
+  </div>
+
+  <div class="call hd-call" id="call" role="alertdialog" aria-labelledby="callName">
+    <span class="hd-call__label hd-label"><span id="callPort">Incoming // HDMI 2</span><span class="hd-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+    <span class="hd-portrait"><img id="callImg" alt=""></span>
+    <span class="hd-call__name" id="callName">Blu-ray</span>
+    <span class="call__text">Just woke up. Switch to it?</span>
+    <div class="hd-call__actions">
+      <button class="hd-btn hd-btn--primary" type="button" id="callGo">Switch</button>
+      <button class="hd-btn" type="button" id="callNo">Ignore</button>
+    </div>
+  </div>
+
+  <div class="scrim info" id="info" hidden>
+    <div class="hd-panel hd-panel--spine info__box">
+      <div class="hd-panel__head"><span id="iTitle" data-hd-glitch-text data-layers="1">Scan</span><span data-hd-code data-kind="id" data-seed="info"></span></div>
+      <div class="info__art"><div class="scanart" id="iArt" style="width:380px;height:380px"></div><span class="hd-brackets" aria-hidden="true"></span></div>
+      <svg class="info__lines" id="iLines" width="1320" height="640" aria-hidden="true"></svg>
+      <div class="info__tags" id="iTags"></div>
+      <button class="hd-btn info__close" type="button" id="iClose">Close</button>
+    </div>
+  </div>
+
+  <div class="scrim search" id="search" hidden>
+    <div class="hd-panel hd-panel--spine-act ovl search__box">
+      <div class="hd-panel__head">Scan // apps <span data-hd-code data-kind="serial" data-mask="SC-000" data-seed="scan"></span></div>
+      <div class="search__q">
+        <div class="search__field hd-frame" id="sField"></div>
+        <button class="hd-btn" type="button" id="sMic"><span class="mic" aria-hidden="true"></span>&nbsp;Voice</button>
+        <span class="search__heard" id="sHeard"></span>
+      </div>
+      <div class="keys" id="sKeys"></div>
+      <div class="search__res" id="sRes"></div>
+    </div>
+  </div>
+
+  <div class="scrim setup" id="setup" hidden>
+    <div class="hd-panel hd-panel--spine-act ovl setup__box">
+      <div class="hd-panel__head">Setup <span data-hd-code data-kind="serial" data-mask="ST-000" data-seed="setup"></span></div>
+      <div class="setup__steps" id="stSteps"></div>
+      <h2 class="setup__title" id="stTitle"></h2>
+      <p class="setup__text" id="stText"></p>
+      <div id="stBody"></div>
+      <div class="setup__foot">
+        <button class="hd-btn hd-btn--quiet" type="button" id="stSkip">Skip setup</button>
+        <span class="sp"></span>
+        <button class="hd-btn" type="button" id="stBack">Back</button>
+        <button class="hd-btn hd-btn--primary" type="button" id="stNext">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim extras" id="extras" hidden>
+    <div class="hd-panel hd-panel--spine-act ovl ex__box">
+      <div class="hd-panel__head">Online extras <span data-hd-code data-kind="serial" data-mask="EX-000" data-seed="extras"></span></div>
+      <p class="ex__lead">Everything works offline. Extras only connect when you switch them on.</p>
+      <div id="exList"></div>
+      <div class="jump__foot">
+        <span class="hd-hint"><span class="hd-key">&larr;</span><span class="hd-key">&rarr;</span>Change</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">OK</span>Pick</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">Back</span>Close</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim kbd" id="kbd" hidden>
+    <div class="hd-panel hd-panel--spine-act ovl kbd__box">
+      <div class="hd-panel__head"><span id="kTitle">Name</span><span class="hd-mono" id="kCount">0 / 24</span></div>
+      <div class="search__field hd-frame" id="kField"></div>
+      <div class="keys" id="kKeys"></div>
+      <div class="kbd__foot">
+        <span class="hd-hint"><span class="hd-key hd-key--word">Back</span>Cancel</span><span class="sp"></span>
+        <button class="hd-btn" type="button" id="kCancel">Cancel</button>
+        <button class="hd-btn hd-btn--primary" type="button" id="kDone">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="standby" id="standby" aria-hidden="true">
+    <div class="standby__pos" id="sbPos">
+      <span class="hd-label">Standby // screen rest</span>
+      <span class="standby__clock hd-num hd-num--split"><span class="hd-num__int" id="sbHM">0:00</span><span class="hd-num__frac" id="sbAP">am</span></span>
+      <span class="hd-label hd-label--meta" id="sbDate"></span>
+      <span class="hd-hint" style="margin-top:14px"><span class="hd-key hd-key--word">OK</span>Any button wakes the screen</span>
+    </div>
+  </div>
+
+  <div class="boot" id="boot">
+    <div class="boot__box">
+      <span class="hd-bootlog__status">System start</span>
+      <span class="hd-title-card hd-device boot__title" id="bootTitle" data-hd-glitch-text data-layers="2">Home Deck</span>
+      <div class="hd-log" id="bootLog"></div>
+      <span class="boot__build">Build // glidian.dev</span>
+    </div>
+  </div>
+</div>
+
+<script src="apps.js"></script>
+<script src="tv.js"></script>
+<script src="kit/kit.js"></script>
+<script src="native.js"></script>
+<script src="marquee.js"></script>
+<script>
+  const stage = document.querySelector('.stage');
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+  const two = n => String(n).padStart(2, '0');
+  const isLite = () => root.classList.contains('lite');
+  const ICON = (f, kind = '') => `icons/${f}${kind}.webp`;
+  const store = { get(k, d) { try { return JSON.parse(localStorage.getItem('homedeck-' + k)) ?? d; } catch { return d; } },
+                  set(k, v) { try { localStorage.setItem('homedeck-' + k, JSON.stringify(v)); } catch {} } };
+  const DEV = NATIVE ? NATIVE.device() : null;
+  const deckSub = DEV ? `${DEV.name || 'This TV'} // ${DEV.panel >= 2160 ? '4K' : DEV.panel >= 1080 ? 'HD' : 'TV'} display` : 'Living room // 4K display';
+  $('brandSub').textContent = deckSub;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* =====================================================================
+     Apps. Whatever the TV has: apps with art, plus apps with only a plain icon or none at all.
+     ===================================================================== */
+  const LIST = [
+    ['Netflix', 'netflix', '#E50914', 'Streaming'], ['Prime Video', 'prime-video', '#00A8E1', 'Streaming'],
+    ['HBO Max', 'hbo-max', '#2D55FF', 'Streaming'], ['Disney+', 'disney-plus', '#3B5BFF', 'Streaming'],
+    ['YouTube', 'youtube', '#FF2A3D', 'Video'], ['Hulu', 'hulu', '#1CE783', 'Streaming'], ['Peacock', 'peacock', '#7B61FF', 'Streaming'],
+    ['Crunchyroll', 'crunchyroll', '#F47521', 'Anime'], ['Spotify', 'spotify', '#1DB954', 'Music'], ['Steam Link', 'steam-link', '#66C0F4', 'Games'],
+    ['Play Store', 'play-store', '#01A971', 'Store'], ['Media Player', 'media-player', '#FFB21E', 'Player'],
+    ['Apple TV', 'apple-tv', '#D6D0D0', 'Streaming'], ['Kodi', 'kodi', '#17B2E7', 'Player'], ['Paramount+', 'paramount-plus', '#0064FF', 'Streaming'],
+    ['Plex', 'plex', '#E5A00D', 'Player'], ['Pluto TV', 'pluto-tv', '#FFF200', 'Free TV'], ['Sling', 'sling', '#1F7AFF', 'Live TV'],
+    ['Tubi', 'tubi', '#F5E400', 'Free TV'], ['Twitch', 'twitch', '#9146FF', 'Live streams'],
+  ];
+  // plain icons as an app would ship them (simple generic shapes, drawn here), and one app that ships no icon
+  const PLAIN = {
+    'Metro News': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#F29A1F"/><rect x="20" y="22" width="56" height="52" rx="6" fill="#fff"/><rect x="27" y="30" width="42" height="9" fill="#F29A1F"/><rect x="27" y="45" width="19" height="17" fill="#F29A1F" opacity=".55"/><rect x="51" y="45" width="18" height="4" fill="#9a5a08"/><rect x="51" y="52" width="18" height="4" fill="#9a5a08"/><rect x="51" y="59" width="12" height="4" fill="#9a5a08"/></svg>`,
+    'Pocket Arcade': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#D9338F"/><rect x="18" y="52" width="60" height="22" rx="8" fill="#fff"/><rect x="44" y="26" width="8" height="28" fill="#fff"/><circle cx="48" cy="24" r="11" fill="#FFD23F"/><rect x="26" y="59" width="8" height="8" fill="#D9338F"/><rect x="62" y="59" width="8" height="8" fill="#D9338F"/></svg>`,
+  };
+  const EXTRA = [['Metro News', 'News'], ['Pocket Arcade', 'Games'], ['Lumen Fitness', 'Fitness']];
+  // set 3 (added after the first 20, so favorites and continue-watching indexes stay put): name, icon file, brand color, kind, one line
+  const SET3 = [
+    ['YouTube TV', 'youtube-tv', '#FF0000', 'Live TV', 'Live channels, sport and a cloud recorder.'],
+    ['YouTube Kids', 'youtube-kids', '#FF0000', 'Kids', 'Videos made for children.'],
+    ['YouTube Music', 'youtube-music', '#FF0000', 'Music', 'Songs, albums and music videos.'],
+    ['ESPN', 'espn', '#CC0000', 'Sport', 'Live sport, scores and highlights.'],
+    ['Amazon Music', 'amazon-music', '#25D1DA', 'Music', 'Music and podcasts.'],
+    ['Discovery+', 'discovery-plus', '#2175D9', 'Streaming', 'Real-life, nature and food shows.'],
+    ['Starz', 'starz', '#E6E6E6', 'Streaming', 'Films and premium series.'],
+    ['MGM+', 'mgm-plus', '#C9A44C', 'Streaming', 'Films and series.'],
+    ['Jellyfin', 'jellyfin', '#AA5CC3', 'Media', 'Your own free media server.'],
+    ['VLC', 'vlc', '#FF8800', 'Media', 'Plays almost any video file.'],
+    ['Emby', 'emby', '#52B54B', 'Media', 'Your own media server.'],
+    ['Fubo', 'fubo', '#F64D27', 'Live TV', 'Live TV built around sport.'],
+    ['Philo', 'philo', '#7B4BFF', 'Live TV', 'Live TV channels at a lower price.'],
+    ['DAZN', 'dazn', '#F8FC00', 'Sport', 'Live sport, boxing and football.'],
+    ['NFL+', 'nfl-plus', '#013369', 'Sport', 'Games, replays and highlights.'],
+    ['NBA', 'nba', '#1D428A', 'Sport', 'Live games and highlights.'],
+    ['GeForce NOW', 'geforce-now', '#76B900', 'Games', 'PC games streamed from the cloud.'],
+    ['Xbox', 'xbox', '#107C10', 'Games', 'Console games streamed to the TV.'],
+    ['PBS Kids', 'pbs-kids', '#4BB443', 'Kids', 'Shows and games for young kids.'],
+    ['PBS', 'pbs', '#2638C4', 'Documentary', 'Documentaries, news and drama.'],
+    ['Pandora', 'pandora', '#224099', 'Music', 'Stations made from songs you like.'],
+    ['iHeartRadio', 'iheartradio', '#C6002B', 'Radio', 'Live radio stations and podcasts.'],
+    ['Downloader', 'downloader', '#F57C00', 'Tool', 'Gets files and apps onto the TV.'],
+  ];
+  // the Apps tab, grouped by kind so 46 apps stay calm from the sofa
+  const GROUPS = [
+    ['Streaming', ['Netflix', 'Prime Video', 'HBO Max', 'Disney+', 'Hulu', 'Peacock', 'Apple TV', 'Paramount+', 'Discovery+', 'Starz', 'MGM+']],
+    ['Free and video', ['YouTube', 'Crunchyroll', 'Twitch', 'Pluto TV', 'Tubi']],
+    ['Live TV and sport', ['YouTube TV', 'Sling', 'Fubo', 'Philo', 'ESPN', 'DAZN', 'NFL+', 'NBA', 'Metro News']],
+    ['Music and radio', ['Spotify', 'YouTube Music', 'Amazon Music', 'Pandora', 'iHeartRadio']],
+    ['Kids', ['YouTube Kids', 'PBS Kids', 'PBS']],
+    ['Games', ['Steam Link', 'GeForce NOW', 'Xbox', 'Pocket Arcade']],
+    ['Your media', ['Plex', 'Kodi', 'Jellyfin', 'Emby', 'VLC', 'Media Player']],
+    ['Tools and more', ['Play Store', 'Downloader', 'Lumen Fitness']],
+  ];
+  APPS.length = 0;
+  LIST.forEach(([name, file, glow, kind]) => APPS.push({ name, file, glow, kind, bg: '#0b0b10', fg: glow }));
+  SET3.forEach(([name, file, glow, kind, line]) => APPS.push({ name, file, glow, kind, line, bg: '#0b0b10', fg: glow }));
+  EXTRA.forEach(([name, kind]) => APPS.push({ name, kind, file: null, plain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, glow: '#8f8889', bg: '#0b0b10', fg: '#fff' }));
+  if (NATIVE) {
+    const art = new Map([...LIST.map(([name, file, glow, kind]) => [name, { file, glow, kind }]),
+                         ...SET3.map(([name, file, glow, kind, line]) => [name, { file, glow, kind, line }])]);
+    const names = [...art.keys()];
+    APPS.length = 0;
+    NATIVE.apps().forEach(a => {
+      // a known app keeps its name, kind and line; without its tile art it shows its own icon in a badge
+      const name = NATIVE.artName(a.pkg, a.label, names), m = name && art.get(name), has = m && NATIVE.hasArt(m.file);
+      APPS.push(m ? { name, ...m, file: has ? m.file : null, plain: has ? null : a.icon, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: m.glow }
+        : { name: a.label, kind: a.kind, file: null, plain: a.icon, glow: '#8f8889', pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff' });
+    });
+  }
+  const DESC = {
+    Streaming: 'Films and series on demand.', Video: 'Videos, channels and your subscriptions.', Anime: 'Anime, the same day as Japan.',
+    Music: 'Music, playlists and podcasts.', Games: 'Games on the big screen.', Store: 'Get more apps for this TV.',
+    Player: 'Your own files and media server.', 'Free TV': 'Free channels, always on.', 'Live TV': 'Live channels over the internet.',
+    'Live streams': 'Live channels and creators, as it happens.', News: 'Local and world headlines.', Fitness: 'Workouts for the living room.',
+    Sport: 'Live sport and highlights.', Kids: 'Made for children.', Media: 'Your own files and media server.', Radio: 'Live radio and podcasts.',
+    Documentary: 'Documentaries and more.', Tool: 'A tool for this TV.',
+  };
+  const initials = n => n.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const KIT_COLS = ['#5ef6ff', '#ffd740', '#1bd676', '#b36bff', '#ff9f43', '#4a8cff', '#05dfad'];
+  const hashCol = s => KIT_COLS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % KIT_COLS.length];
+  // the frame color comes from the icon itself: the average of its strongly colored pixels
+  function mainColor(src) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas'); c.width = c.height = 32;
+        const g = c.getContext('2d'); g.drawImage(im, 0, 0, 32, 32);
+        const d = g.getImageData(0, 0, 32, 32).data; let r = 0, gg = 0, b = 0, n = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
+          if (d[i + 3] > 200 && mx - mn > 60) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; n++; }
+        }
+        res(n ? '#' + [r, gg, b].map(v => Math.round(v / n).toString(16).padStart(2, '0')).join('') : '#8f8889');
+      };
+      im.onerror = () => res('#8f8889');
+      im.src = src;
+    });
+  }
+  // the takeover art for apps without their own art: the plain icon, or the initials drawn big in the kit's wide face
+  function initialsArt(text, col) {
+    const c = document.createElement('canvas'); c.width = 900; c.height = 420;
+    const g = c.getContext('2d'); g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '300px Michroma, sans-serif'; g.fillText(text, 450, 220);
+    return c.toDataURL('image/png');
+  }
+
+  /* =====================================================================
+     Inputs: they name themselves (as a TV reads it over HDMI-CEC), and the viewer can rename them
+     ===================================================================== */
+  const PORTS = [
+    { id: 'h1', n: 1, cec: 'Soundbar', emblem: 'sound-out', glow: '#5ef6ff', signal: false, arc: true, pic: '-', audio: 'Out (ARC)', t: 0 },
+    { id: 'h2', n: 2, cec: 'Game console', emblem: 'hdmi-1', glow: '#ffd740', signal: true, pic: '4K 120', audio: 'Surround', t: 1 },
+    { id: 'h3', n: 3, cec: 'Blu-ray', emblem: 'hdmi-2', glow: '#ffb21e', signal: false, pic: '4K HDR', audio: 'Stereo', t: 0 },
+    { id: 'h4', n: 4, cec: null, emblem: 'hdmi-3', glow: '#a4a3a3', signal: false, pic: '-', audio: '-', t: 0 },
+  ];
+  // a port's picture: a console or a player only when the device on it says it is one, otherwise the plain connector
+  const portArt = name => /play ?station|xbox|nintendo|switch|console|game/i.test(name || '') ? 'hdmi-1'
+    : /blu-?ray|dvd|disc|player/i.test(name || '') ? 'hdmi-2' : 'hdmi-3';
+  if (NATIVE) {
+    PORTS.length = 0;
+    NATIVE.inputs().forEach((p, k) => PORTS.push({ id: p.id, n: p.n, cec: p.cec || null, emblem: portArt(p.cec),
+      glow: ['#ffd740', '#ffb21e', '#5ef6ff', '#a4a3a3'][k % 4], signal: !!p.connected, pic: '', audio: '', t: p.connected ? 1 : 0 }));
+  }
+  const NP = Math.max(4, ...PORTS.map(p => p.n));
+  const NAMES = ['Auto', 'HDMI', 'Game console', 'PC', 'Cable box', 'Blu-ray', 'Streaming box', 'Custom…'];
+  // a port can be the audio out (HDMI ARC) to a soundbar: it is then never offered as something to switch to
+  const arcSaved = store.get('arc', null);
+  if (Array.isArray(arcSaved) && arcSaved.length === PORTS.length) PORTS.forEach((p, k) => { p.arc = !!arcSaved[k]; });
+  const switchable = () => PORTS.filter(p => !p.arc);
+  let customNames = store.get('names-custom', Array(NP).fill(''));
+  if (!Array.isArray(customNames) || customNames.length !== NP) customNames = Array(NP).fill('');
+  const isCustom = i => NAMES[i] === 'Custom…';
+  let names = store.get('names2', Array(NP).fill(0));
+  if (!Array.isArray(names) || names.length !== NP) names = Array(NP).fill(0);
+  const portName = p => { const v = NAMES[names[p.n - 1]];
+    if (p.arc) return 'Audio out (ARC)';
+    return v === 'Auto' ? (p.cec || `HDMI ${p.n}`) : v === 'HDMI' ? `HDMI ${p.n}` : v === 'Custom…' ? (customNames[p.n - 1] || `HDMI ${p.n}`) : v; };
+  const nameLabel = (i, n) => NAMES[i] === 'Auto' ? 'Auto (device name)' : NAMES[i] === 'HDMI' ? 'Port number'
+    : NAMES[i] === 'Custom…' ? (customNames[n - 1] ? `"${customNames[n - 1]}"` : 'Custom… (OK to type)') : NAMES[i];
+  const SYS = [
+    { id: 'live', name: 'Live TV', file: 'live-tv', glow: '#ffb21e', desc: 'Channels from the antenna or cable.', next: ['Open', 'Antenna and cable'] },
+    { id: 'net', name: 'Network', file: 'network', glow: '#5ef6ff', desc: 'Connected over Wi-Fi.', next: ['Online', 'Wi-Fi 6 // 412 Mbps'] },
+    { id: 'set', name: 'Settings', file: 'settings', glow: '#5ef6ff', desc: 'Picture, sound, setup and the rest.', next: ['Open', 'Jump To and setup'] },
+  ];
+
+  if (NATIVE) {
+    const n = NATIVE.network(), net = SYS.find(s => s.id === 'net');
+    net.desc = n.type === 'wifi' ? 'Connected over Wi-Fi.' : n.type === 'ethernet' ? 'Connected by cable.' : n.type === 'none' ? 'Not connected.' : 'Connected.';
+    net.next = n.type === 'none' ? ['Offline', 'OK opens network settings']
+      : n.type === 'wifi' ? ['Online', `Wi-Fi${n.mhz ? ` // ${n.mhz > 4900 ? '5' : '2.4'} GHz` : ''}${n.mbps > 0 ? ` // ${n.mbps} Mbps link` : ''}`]
+      : ['Online', n.type === 'ethernet' ? 'Ethernet' : 'Network'];
+  }
+  // ---- "Jump back in": the apps used most recently, a list the launcher keeps itself (a sideloaded launcher can't read
+  //      other apps' Watch Next rows, so no shows or episodes). A playing app shows what is playing, as Android's media
+  //      sessions report it. Minutes since each app was last opened, for the preview:
+  const AGO = { 8: 0, 0: 120, 4: 300, 7: 1440, 1: 2880 };
+  let OPENED = NATIVE ? NATIVE.recents() : null;   // on the TV: when each app was last opened from here
+  const lastOpened = i => OPENED ? (OPENED[APPS[i].pkg] ? Math.max(0, Math.round((Date.now() - OPENED[APPS[i].pkg]) / 60000)) : Infinity)
+    : AGO[i] ?? 1440 * (3 + (i * 7) % 20);
+  const recent = () => APPS.map((_, i) => i).sort((a, b) => (lastOpened(a) - lastOpened(b)) || 0).slice(0, 5);
+  const agoText = m => m === Infinity ? 'not yet' : m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : m < 2880 ? 'yesterday' : `${Math.round(m / 1440)} days ago`;
+  // what is playing (a sample track in the preview) for the radio strip
+  const NOW = NATIVE ? { app: -1, label: '', station: '', track: '', artist: '', len: 0, t: 0, playing: false } : { app: 8, station: 'Night Drive FM', track: 'Glass Static', artist: 'Halcyon Wire', len: 238, t: 102, playing: true };
+
+  /* =====================================================================
+     Tiles
+     ===================================================================== */
+  const BR = '<i class="hd-brackets__layer" aria-hidden="true"></i>';
+  function badge(o) {          // o: { cls, attrs, c, img, init, cap, port }
+    return `<div class="badge ${o.cls || ''}" ${o.attrs || ''} style="--c:${o.c};--app:${o.c}">${BR}<span class="badge__frame" aria-hidden="true"></span>
+      <span class="badge__in"><span class="badge__ticks"></span><span class="badge__side"></span>${o.port ? `<span class="badge__port">${o.port}</span>` : ''}
+      <span class="badge__emblem">${o.img ? `<img src="${o.img}" alt="">` : `<span class="badge__init">${o.init}</span>`}</span>
+      <span class="badge__cap">${esc(o.cap)}</span></span></div>`;
+  }
+  function appTile(i, cls = '', attrs = '') {
+    const a = APPS[i], base = `data-fi data-app="${i}" ${attrs}`;
+    if (a.file) return `<div class="art ${cls}" ${base} style="--app:${a.glow}">${BR}<img src="${ICON(a.file)}" alt="${esc(a.name)}"></div>`;
+    return badge({ cls: cls.replace(/art--/g, 'badge--'), attrs: base, c: a.glow, img: a.plain, init: initials(a.name), cap: a.name });
+  }
+  const portTile = p => badge({ attrs: `data-fi data-port="${p.id}"`, c: p.glow, img: ICON(p.emblem, '-bg'), cap: portName(p), port: portName(p) === `HDMI ${p.n}` ? '' : `HDMI ${p.n}` });
+  const sysTile = s => `<div class="art" data-fi data-sys="${s.id}" style="--app:${s.glow}">${BR}<img src="${ICON(s.file)}" alt="${s.name}"></div>`;
+
+  const FAVS = 7;
+  let favs = store.get('favs', [0, 1, 2, 3, 4]);
+  if (!Array.isArray(favs) || !favs.length) favs = [0, 1, 2, 3, 4];
+  favs = Array.from({ length: FAVS }, (_, n) => favs[n] ?? null);   // a saved five-spot row keeps its apps, new spots free
+  if (NATIVE) {   // kept by package, so favorites survive apps being added or removed
+    const at = pkg => { const i = APPS.findIndex(a => a.pkg === pkg); return i < 0 ? null : i; };
+    const kept = store.get('favs-pkg', null);
+    if (Array.isArray(kept) && kept.length) favs = Array.from({ length: FAVS }, (_, n) => kept[n] == null ? null : at(kept[n]));
+    else {
+      const first = ['com.netflix.ninja', 'com.amazon.amazonvideo.livingroom', 'com.wbd.stream', 'com.disney.disneyplus',
+                     'com.google.android.youtube.tv'].map(at).filter(i => i != null);
+      APPS.forEach((_, i) => { if (first.length < 5 && !first.includes(i)) first.push(i); });
+      favs = Array.from({ length: FAVS }, (_, n) => n < 5 ? first[n] ?? null : null);
+    }
+  }
+  const saveFavs = () => { store.set('favs', favs); if (NATIVE) store.set('favs-pkg', favs.map(i => i == null ? null : APPS[i].pkg)); };
+  function renderFavs() {
+    $('cnt-fav').textContent = two(favs.filter(i => i != null).length);
+    $('fav').innerHTML = favs.map((i, n) => i == null || !APPS[i]
+      ? `<div class="slot" data-fi data-slot="${n}">${BR}<span class="slot__frame hd-frame"><span class="scan__name">+</span><span class="scan__mic">Free spot</span></span></div>`
+      : appTile(i)).join('');
+  }
+  function renderApps() {
+    const idx = n => APPS.findIndex(a => a.name === n), seen = new Set();
+    const groups = GROUPS.map(([g, names]) => [g, names.map(idx).filter(i => i >= 0)]);
+    groups.forEach(([, l]) => l.forEach(i => seen.add(i)));
+    // anything else on the TV joins the group for its kind, or the last group
+    const KIND_GROUP = { Streaming: 0, Video: 1, Anime: 1, 'Free TV': 1, 'Live streams': 1, 'Live TV': 2, Sport: 2, News: 2,
+                         Music: 3, Radio: 3, Kids: 4, Games: 5, Player: 6, Media: 6 };
+    APPS.forEach((a, i) => { if (!seen.has(i)) groups[KIND_GROUP[a.kind] ?? groups.length - 1][1].push(i); });
+    // the viewer's own order inside each group, kept by package; apps not in it (new ones) follow in their usual order
+    const order = store.get('order', {}), keyOf = i => APPS[i].pkg || APPS[i].name;
+    groups.forEach(([g, l]) => {
+      const o = order[g];
+      if (Array.isArray(o)) l.sort((a, b) => { const x = o.indexOf(keyOf(a)), y = o.indexOf(keyOf(b)); return (x < 0 ? 1e6 : x) - (y < 0 ? 1e6 : y); });
+    });
+    $('apps').innerHTML = groups.filter(([, l]) => l.length).map(([g, l], n, all) =>
+      `<div class="row" data-row="g${n}" data-group="${g}"><h2 class="hd-h row__title">${g} <span class="hd-mono">${two(l.length)}  //  ${n + 1} of ${all.length}</span></h2>
+       <div class="tiles tiles--apps">${l.map(i => appTile(i, 'art--sm')).join('')}</div></div>`).join('');
+  }
+  // glide the Apps view so the row you are on sits at the top (the last rows stop at the bottom)
+  function scrollApps(row) {
+    const sc = $('apps'), view = sc.parentNode;
+    const y = Math.max(0, Math.min(row.offsetTop, sc.offsetHeight - view.clientHeight + 70));
+    sc.style.transform = `translateY(${-y}px)`;
+    sc.style.perspectiveOrigin = `50% ${row.offsetTop + row.offsetHeight / 2}px`;   // the lean pivots on the row you are on
+  }
+  function renderInputs() { $('inp').innerHTML = PORTS.map(portTile).join('') + SYS.map(sysTile).join(''); }
+  // the input that is live right now (a signal, or a device that announced itself), never the audio-out port;
+  // it leads Jump back in, and Jump back in is redrawn only when it changes
+  let LIVE = null, liveKey = '';
+  function renderLive() {
+    const on = PORTS.filter(p => p.signal && !p.arc).sort((a, b) => b.t - a.t), p = on[0];
+    LIVE = p ? { p, many: on.length } : null;
+    const key = p ? `${p.id}|${portName(p)}|${p.emblem}|${on.length}` : '';
+    if (key !== liveKey) { liveKey = key; renderRecent(); }
+  }
+  const liveCard = () => !LIVE ? '' : `<div class="cw hd-frame" data-fi data-live data-port="${LIVE.p.id}" style="--app:${LIVE.p.glow}">${BR}<span class="cw__strip" aria-hidden="true"></span><span class="cw__title">${esc(portName(LIVE.p))}</span><img class="cw__thumb" src="${ICON(LIVE.p.emblem, '-bg')}" alt=""><span class="cw__sub">HDMI ${LIVE.p.n} // Live${LIVE.many > 1 ? ` // ${LIVE.many} live` : ''}</span><span class="cw__left">Switch</span></div>`;
+  const playLine = () => `${NOW.playing ? 'Playing' : 'Paused'} // ${NOW.track}`;
+  function renderRecent() {
+    const shown = recent().slice(0, LIVE ? 4 : 5);
+    $('cnt-cw').textContent = two(shown.length + (LIVE ? 1 : 0));
+    $('cw').innerHTML = liveCard() + shown.map(i => {
+      const a = APPS[i], playing = i === NOW.app;
+      return `<div class="cw hd-frame" data-fi data-app="${i}" data-recent style="--app:${a.glow};--p:${playing && NOW.len ? (NOW.t / NOW.len).toFixed(3) : 0}">${BR}<span class="cw__strip" aria-hidden="true"></span>
+        <span class="cw__title">${esc(a.name)}</span><img class="cw__thumb" src="${a.file ? ICON(a.file, '-bg') : a.plain || ''}" alt="">
+        <span class="cw__sub">${playing ? esc(playLine()) : lastOpened(i) === Infinity ? 'Not opened yet' : `Opened ${agoText(lastOpened(i))}`}</span>
+        ${playing && NOW.len ? '<span class="cw__bar" aria-hidden="true"></span>' : ''}<span class="cw__left">${playing ? esc(NOW.artist) : esc(a.kind)}</span>
+      </div>`;
+    }).join('');
+  }
+  function renderAll() { renderFavs(); renderApps(); renderInputs(); renderLive(); renderRecent(); }
+  renderAll();
+  HD.init(stage);
+
+  // finish the badge apps once their colors and art are known (fonts first, for the initials art)
+  const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+  Promise.all(APPS.map(async a => {
+    if (a.file) return;
+    if (a.plain) { a.glow = await mainColor(a.plain); a.bgImg = a.plain; }
+    else { a.glow = hashCol(a.name); await fontsReady; a.bgImg = initialsArt(initials(a.name), a.glow); }
+    a.fg = a.glow;
+  })).then(() => { const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
+
+  /* =====================================================================
+     The takeover
+     ===================================================================== */
+  const layers = [$('bgA'), $('bgB')];
+  let front = 0, bgSrc = null, bgTimer;
+  function takeover(src, glow) {
+    $('bgGlow').style.setProperty('--app', glow);
+    if (!src || src === bgSrc) return;
+    bgSrc = src; clearTimeout(bgTimer);
+    bgTimer = setTimeout(() => {
+      const next = layers[1 - front], img = next.querySelector('img');
+      img.src = src;
+      const swap = () => { if (bgSrc !== src) return; layers[front].classList.remove('on'); next.classList.add('on'); front = 1 - front; };
+      (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(swap);
+    }, 90);
+  }
+  const appBg = a => a.file ? ICON(a.file, '-bg') : a.bgImg;
+
+  /* =====================================================================
+     What you are on, and what you would do there
+     ===================================================================== */
+  const hero = $('hero'), hTitle = $('hTitle');
+  let lastName = '';
+  function setGlitchText(el, text) { el.setAttribute('data-text', text); el.querySelectorAll('span').forEach(s => { s.textContent = text; }); }
+  const fmt = s => `${Math.floor(s / 60)}:${two(s % 60)}`;
+  function show(o) {
+    setGlitchText(hTitle, o.name);
+    if (o.name !== lastName) { lastName = o.name; HD.glitch(hTitle); }   // the echo shows only when the thing changes
+    $('hLabel').textContent = o.label || 'Now on';
+    $('hChip').textContent = o.chip; $('hIdx').textContent = o.idx || ''; $('hDesc').textContent = o.desc;
+    $('nLabel').textContent = o.next[0]; $('nText').textContent = o.next[1]; $('nAct').textContent = o.act || 'Open';
+    $('nLabel').hidden = !o.next[0]; $('nText').hidden = !o.next[1];
+    hero.style.setProperty('--app', o.glow);
+    takeover(o.bg, o.glow);
+  }
+  function appInfo(i) {
+    const a = APPS[i];
+    const next = i === NOW.app ? [NOW.playing ? 'Playing' : 'Paused', `${NOW.track} // ${NOW.artist}`] : ['Last opened', agoText(lastOpened(i))];
+    return { name: a.name, chip: a.kind, idx: `${two(i + 1)} / ${two(APPS.length)}`, desc: a.line || DESC[a.kind] || 'An app on this TV.', glow: a.glow, bg: appBg(a), next, act: 'Open' };
+  }
+  const portInfo = p => p.arc ? { label: 'Audio out', name: portName(p), chip: `HDMI ${p.n}`, idx: 'ARC', glow: p.glow, bg: ICON(p.emblem, '-bg'),
+    desc: `Sound goes out to the ${p.cec || 'sound system'} here. Not something to watch.`, next: ['Sound', NATIVE ? 'Out over HDMI ARC' : J.snd.vals[J.snd.i]], act: 'Info' } : ({ label: 'Input', name: portName(p), chip: `HDMI ${p.n}`, idx: p.signal ? 'Signal' : 'No signal', glow: p.glow, bg: ICON(p.emblem, '-bg'),
+    desc: p.signal ? `${p.cec || 'A device'} is on${p.pic ? `. Picture ${p.pic}, sound ${p.audio}` : ''}.` : p.cec ? `${p.cec} is asleep. Switching wakes it.` : 'Nothing plugged in yet.',
+    next: [p.signal ? 'Live' : 'Idle', `HDMI ${p.n}${portName(p) !== `HDMI ${p.n}` ? ' // ' + portName(p) : ''}`], act: 'Switch' });
+  const sysInfo = s => ({ label: 'Input', name: s.name, chip: 'System', idx: '', glow: s.glow, bg: ICON(s.file, '-bg'), desc: s.desc, next: s.next, act: 'Open' });
+  const TABS = [['Home', 'Favorites, recent apps, and what is plugged in.'], ['Apps', 'Every app on this TV.'], ['Inputs', 'What is plugged in, and the settings.']];
+  function infoFor(el) {
+    const d = el.dataset;
+    if (d.app != null) return appInfo(+d.app);
+    if (d.live != null) { const p = PORTS.find(x => x.id === d.port); return p ? { ...portInfo(p), label: 'Live input' } : null; }
+    if (d.port) return portInfo(PORTS.find(x => x.id === d.port));
+    if (d.sys) return sysInfo(SYS.find(x => x.id === d.sys));
+    if (d.tab != null) return { label: 'Section', name: TABS[+d.tab][0], chip: 'Section', desc: TABS[+d.tab][1], glow: '#5ef6ff', next: ['Move', 'Down to the rows'], act: 'Open' };
+    if (d.scan != null) return { label: 'Find', name: 'Scan', chip: 'Search', desc: 'Find any app by name, or say it.', glow: '#5ef6ff', next: ['Type', 'or use Voice'], act: 'Open' };
+    if (d.slot != null) return { label: 'Free spot', name: 'Free spot', chip: 'Favorites', idx: `${+d.slot + 1} / ${favs.length}`, desc: 'Hold OK on any app and pick Pin.', glow: '#5ef6ff', next: ['Pin', 'Hold OK on an app'], act: 'Help' };
+    if (el.id === 'jumpBtn') return { label: 'Quick panel', name: 'Jump To', chip: 'Hold Back', desc: 'Picture, sound, input, names and color.', glow: '#5ef6ff', next: ['Open', 'or hold Back anywhere'], act: 'Open' };
+    if (el.id === 'helpBtn') return { label: 'Help', name: 'Help', chip: 'Remote', desc: 'Shows the remote buttons for a moment.', glow: '#5ef6ff', next: ['Show', 'the button hints'], act: 'Show' };
+    if (el.id === 'rPlay') return { ...(NOW.app >= 0 ? appInfo(NOW.app) : { name: NOW.label || 'Music', chip: 'Music', desc: `${NOW.track} // ${NOW.artist}`,
+      glow: '#5ef6ff', next: [NOW.playing ? 'Playing' : 'Paused', `${NOW.track} // ${NOW.artist}`] }), label: NOW.playing ? 'Playing' : 'Paused', act: NOW.playing ? 'Pause' : 'Play' };
+    return null;
+  }
+
+  /* =====================================================================
+     Sections, depth and lean
+     ===================================================================== */
+  const deck = $('deck'), sections = [...deck.querySelectorAll('.section')], tabs = [...document.querySelectorAll('.hd-tab')];
+  let sec = 0, cur = null;
+  const lastIn = [null, null, null];
+  function arm() {   // only the active section takes part; Up from the top line of a section goes to its tab
+    sections.forEach((s, i) => {
+      s.querySelectorAll('[data-fi]').forEach(el => { el.toggleAttribute('data-f', i === sec && !trapped); delete el.dataset.up; });
+      if (i !== sec) return;
+      const first = [...s.querySelector('.row').querySelectorAll('[data-fi]')].filter(el => el.offsetParent);
+      const top = Math.min(...first.map(el => el.offsetTop));
+      first.filter(el => el.offsetTop === top).forEach(el => { el.dataset.up = `[data-tab="${i}"]`; });
+    });
+    $('live').toggleAttribute('data-f', sec === 0 && !$('live').hidden && !trapped);
+  }
+  function place() {
+    sections.forEach((s, i) => { s.style.transform = `translateX(${(i - sec) * 1960}px)`; s.classList.toggle('is-off', i !== sec); });
+    tabs.forEach((t, i) => t.setAttribute('aria-selected', String(i === sec)));
+  }
+  /* No dead ends at a row's edge: the remote reads a section like a page. Right at the end of a line goes to the
+     start of the next line, then on to the next section's first item; Left mirrors it back to the previous section's
+     last item. The last section stops (no wrap), so the end is easy to feel. */
+  function lines(i) {
+    const rows = [...sections[i].querySelectorAll('.row')], out = [];
+    rows.forEach(r => {
+      const items = [...r.querySelectorAll('[data-fi]')].filter(el => el.offsetParent);
+      const tops = [...new Set(items.map(el => el.offsetTop))].sort((x, y) => x - y);
+      tops.forEach(t => out.push(items.filter(el => el.offsetTop === t).sort((x, y) => x.offsetLeft - y.offsetLeft)));
+    });
+    return out.filter(l => l.length);
+  }
+  function edgeMove(dir) {
+    if (!cur || !cur.closest('.section:not(.is-off)')) return false;
+    const L = lines(sec), li = L.findIndex(l => l.includes(cur));
+    if (li < 0) return false;
+    const line = L[li], at = line.indexOf(cur);
+    if (dir > 0 && at < line.length - 1) return false;        // not at the edge: the normal move handles it
+    if (dir < 0 && at > 0) return false;
+    if (dir > 0 && li < L.length - 1) { TV.focus(L[li + 1][0]); return true; }
+    if (dir < 0 && li > 0) { const p = L[li - 1]; TV.focus(p[p.length - 1]); return true; }
+    if (dir > 0 && sec === 2) return true;                    // the last section: stop here
+    if (dir < 0 && sec === 0) return true;                    // the first section: stop here
+    switchSection(sec + dir);
+    const N = lines(sec);
+    TV.focus(dir > 0 ? N[0][0] : N[N.length - 1][N[N.length - 1].length - 1]);
+    return true;
+  }
+  // Up and Down between lines use the same reading order (layout positions, so a lifted focused tile can't confuse it);
+  // Up from the top line falls through to tv.js, which goes to the section's tab
+  let vertFrom = null, vertTo = null;
+  function vertMove(dir) {
+    if (!cur || !cur.closest('.section:not(.is-off)')) return false;
+    const L = lines(sec), li = L.findIndex(l => l.includes(cur)), to = L[li + dir];
+    if (li < 0) return false;
+    if (!to) return dir > 0;                                   // nothing below the last line: stay put; Up goes to the tab
+    const cx = el => el.offsetLeft + el.offsetWidth / 2, x = cx(cur);
+    // straight back the way you came lands on the same tile, even when the two rows don't line up
+    const pick = cur === vertTo && to.includes(vertFrom) ? vertFrom
+      : to.reduce((best, el) => Math.abs(cx(el) - x) < Math.abs(cx(best) - x) ? el : best);
+    vertFrom = cur; vertTo = pick;
+    TV.focus(pick);
+    return true;
+  }
+  function switchSection(i, focusInside) {
+    i = (i + 3) % 3;
+    if (i !== sec) { sec = i; arm(); place(); }
+    if (focusInside) TV.focus(lastIn[sec]?.isConnected && lastIn[sec].hasAttribute('data-f') ? lastIn[sec] : sections[sec].querySelector('[data-f]'));
+  }
+  function refocus(prev) {   // after a re-render, land on the same thing again
+    const d = prev?.dataset || {};
+    const q = d.app != null ? `.section:not(.is-off) [data-app="${d.app}"]` : d.port ? `[data-port="${d.port}"][data-f]` : null;
+    const el = (q && stage.querySelector(q)) || (prev?.isConnected && prev.hasAttribute('data-f') ? prev : null);
+    if (el) { cur = null; TV.focus(el); }
+  }
+  let trapped = false;
+  arm(); place();
+
+  stage.addEventListener('tv:focus', e => {
+    const el = e.detail; cur = el;
+    if (el.closest('.jump')) el.scrollIntoView({ block: 'nearest' });
+    if (el.closest('.scrim, .opts, .jump, .call')) return;
+    const row = el.closest('.row');
+    deck.classList.toggle('on-bar', !row);
+    deck.querySelectorAll('.row').forEach(r => { r.classList.toggle('is-active', r === row); if (r !== row) r.style.setProperty('--lean', '0deg'); });
+    if (row) {
+      lastIn[sec] = el;
+      if (row.closest('#apps')) scrollApps(row);
+      const r = el.getBoundingClientRect(), rr = row.getBoundingClientRect();
+      row.style.setProperty('--lean', `${(-((r.left + r.width / 2 - rr.left) / rr.width - .5) * 4).toFixed(2)}deg`);
+    }
+    if (el.dataset.tab != null) switchSection(+el.dataset.tab);
+    const info = infoFor(el); if (info) show(info);
+    if (!isLite() && !reduce) { hero.classList.remove('is-sweeping'); void hero.offsetWidth; hero.classList.add('is-sweeping'); }
+  });
+
+  /* =====================================================================
+     Toasts, hints, Lite (also automatic), the hidden Hack mode
+     ===================================================================== */
+  const toast = (kind, label, title, text, timeout = 3800) => { document.querySelectorAll('.hd-toast').forEach(t => t.remove()); return HD.toast({ kind, label, title, text, timeout }); };
+  let hintTimer;
+  function showHints(ms = 7000) { $('top').classList.add('show-hints'); clearTimeout(hintTimer); hintTimer = setTimeout(() => $('top').classList.remove('show-hints'), ms); }
+  function setLite(on, why) {
+    root.classList.toggle('lite', on);
+    HD.setCRT(!on && !reduce); HD.setGlitch(!on && !reduce);
+    J.lite.i = on ? 1 : 0; if (jumpOpen) drawJump('lite');
+    if (why) toast('warn', 'Performance', 'This screen looks slow', 'Lite mode is on now. Turn it off in Jump To.', 6000);
+    else toast('reward', 'Performance', on ? 'Lite mode on' : 'Lite mode off', on ? 'Glows, haze, scanlines and glitch are off.' : 'Full effects are back.');
+  }
+  // auto Lite: watch the frame time for two seconds after start; a slow screen switches itself to Lite
+  function frameCheck() {
+    if (isLite() || document.visibilityState !== 'visible') return;
+    const forced = /[?&]slow\b/.test(location.search), times = []; let last = 0;
+    const step = t => {
+      if (last) times.push(t - last); last = t;
+      if (times.length < 90) return requestAnimationFrame(step);
+      times.sort((a, b) => a - b);
+      if (forced || times[45] > 34) setLite(true, 'slow');
+    };
+    requestAnimationFrame(step);
+    if (forced) setTimeout(() => { if (!isLite()) setLite(true, 'slow'); }, 1600);
+  }
+  const isHack = () => HD.getMode() === 'hack';
+  function setHack(on) {
+    HD.setMode(on ? 'hack' : 'normal');
+    $('brandSub').textContent = on ? 'Lime mode // lime display' : deckSub;
+    if (J.hack) J.hack.i = on ? 1 : 0;
+    toast('area', 'Display mode', on ? 'Lime mode on' : 'Back to normal', on ? 'Lime on teal-black.' : 'Your color again.');
+  }
+
+  /* =====================================================================
+     Overlays share one rule: while one is open, only its own controls take the remote
+     ===================================================================== */
+  let saved = [];
+  function trap(box) {
+    trapped = true;
+    saved = [...stage.querySelectorAll('[data-f]')].filter(el => !box.contains(el));
+    saved.forEach(el => el.removeAttribute('data-f'));
+  }
+  function untrap(back) {
+    trapped = false;
+    saved.forEach(el => el.isConnected && el.setAttribute('data-f', '')); saved = [];
+    arm(); renderLive(); arm();
+    cur = null; TV.focus(back?.isConnected && back.hasAttribute('data-f') ? back : stage.querySelector('.section:not(.is-off) [data-f]'));
+  }
+
+  /* ---- Jump To ---- */
+  const ACCENTS = [['Cyan', '#5ef6ff', '#56a3a2'], ['Yellow', '#ffd740', '#c9a634'], ['Green', '#1bd676', '#25a865'], ['Violet', '#b36bff', '#8f5bd0'],
+                   ['Orange', '#ff9f43', '#d08038'], ['Blue', '#6aa8ff', '#5a86c8'], ['Lime', '#ddff5e', '#a9c25a']];
+  function applyAccent(n) {
+    const [, hex, dim] = ACCENTS[n], v = parseInt(hex.slice(1), 16);
+    root.style.setProperty('--acc', hex); root.style.setProperty('--acc-dim', dim);
+    root.style.setProperty('--acc-rgb', `${v >> 16 & 255}, ${v >> 8 & 255}, ${v & 255}`);
+  }
+  const J = {
+    pic:   { name: 'Picture mode', icon: 'picture', vals: ['Cinema', 'Vivid', 'Game', 'Standard'], i: 0 },
+    snd:   { name: 'Sound output', icon: 'sound', vals: ['TV speakers', 'Soundbar (HDMI ARC)', 'Soundbar (optical)', 'Bluetooth'], i: store.get('snd', 1) },
+    sleep: { name: 'Sleep timer', icon: 'sleep-timer', vals: ['Off', '30 min', '60 min', '90 min'], i: 0 },
+    inp:   { name: 'Input', icon: 'inputs', vals: [], i: 0 },
+    sep:   null,
+    row1:  { name: 'Row 1 name', vals: ['Favorites', 'Pinned', 'My apps', 'Quick launch', 'Most used', 'Custom…'], i: store.get('row1n', 0), custom: store.get('row1c', '') },
+    row2:  { name: 'Row 2 name', vals: ['Jump back in', 'Recently used', 'Recent', 'Back to it', 'Last opened', 'Custom…'], i: store.get('row2n', 0), custom: store.get('row2c', '') },
+    acc:   { name: 'Accent color', vals: ACCENTS.map(a => a[0]), i: store.get('acc', 0) },
+    away:  { name: 'Away screen', vals: ['1 min', '3 min', '5 min', '10 min'], i: [0, 1, 2, 3].includes(store.get('away', 2)) ? store.get('away', 2) : 2 },
+    lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
+    hack:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
+    ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
+    setup: { name: 'Setup', vals: ['Run again'], i: 0 },
+  };
+  const jump = $('jump'), jList = $('jList');
+  J.order = { name: 'App order', vals: ['Reset'], i: 0 };
+  J.about = { name: 'About', vals: ['Home Deck'], i: 0 };
+  if (NATIVE) {   // a home screen app can't change the picture, sound or sleep timer itself, so these open the TV's own settings
+    J.pic = { name: 'Picture', icon: 'picture', vals: ['Open TV settings'], i: 0, open: 'picture' };
+    J.snd = { name: 'Sound', icon: 'sound', vals: ['Open TV settings'], i: 0, open: 'sound' };
+    delete J.sleep;
+    J.music = { name: 'Music bar', vals: [NATIVE.nowPlaying().access ? 'On' : 'Off // OK to turn on'], i: 0, open: 'listener' };
+    J.tv = { name: 'All TV settings', vals: ['Open'], i: 0, open: 'all' };
+  }
+  let jumpOpen = false, beforeJump = null;
+  function drawJump(keep) {
+    J.inp.vals = ['Home', ...switchable().map(p => `HDMI ${p.n}${portName(p) !== `HDMI ${p.n}` ? ' // ' + portName(p) : ''}`), 'Live TV'];
+    J.inp.i = Math.min(J.inp.i, J.inp.vals.length - 1);
+    jList.innerHTML = Object.entries(J).map(([id, o]) => !o ? '<div class="jump__sep"></div>' : `
+      <div class="jl hd-frame" data-jl="${id}"${jumpOpen ? ' data-f' : ''}>
+        <span class="jl__ico">${o.icon ? `<img src="${ICON(o.icon, '-mini')}" alt="">` : id === 'acc' ? `<span class="jl__sw" style="--sw:${ACCENTS[o.i][1]}"></span>` : '<i></i>'}</span>
+        <span class="jl__name">${o.name}</span>
+        <span class="jl__val">${o.vals.length > 1 ? '<span class="arr">&lsaquo;</span>' : ''}${esc(valText(o))}${o.vals.length > 1 ? '<span class="arr">&rsaquo;</span>' : ''}</span>
+      </div>`).join('');
+    const again = keep && jList.querySelector(`[data-jl="${keep}"]`);
+    if (again) { cur = null; TV.focus(again); }
+  }
+  [J.row1, J.row2].forEach(o => { if (!(o.i >= 0 && o.i < o.vals.length)) o.i = 0; });
+  const rowName = o => o.vals[o.i] === 'Custom…' ? (o.custom || o.vals[0]) : o.vals[o.i];
+  const valText = o => o.vals[o.i] === 'Custom…' ? (o.custom ? `"${o.custom}"` : 'Custom… (OK to type)') : o.vals[o.i];
+  function applyRows() { $('name-fav').textContent = rowName(J.row1); $('name-cw').textContent = rowName(J.row2); applyAccent(J.acc.i); }
+  applyRows();
+  function openJump() {
+    if (jumpOpen || trapped) return;
+    closeOpts(false);
+    jumpOpen = true; beforeJump = cur; trap(jump);
+    jump.classList.add('on'); drawJump();
+    TV.focus(jList.querySelector('.jl')); HD.glitch(jump);
+  }
+  function closeJump() {
+    if (!jumpOpen) return;
+    jumpOpen = false; jump.classList.remove('on'); jList.innerHTML = '';
+    untrap(beforeJump);
+  }
+  function stepJump(id, d) {
+    const o = J[id]; o.i = (o.i + d + o.vals.length) % o.vals.length;
+    if (id === 'row1' || id === 'row2') { store.set(id + 'n', o.i); applyRows(); }
+    if (id === 'acc') { store.set(id, o.i); applyRows(); }
+    if (id === 'snd') store.set('snd', o.i);
+    if (id === 'away') { store.set('away', o.i); IDLE = 60000 * AWAY_MIN[o.i]; poke(); }
+    if (id === 'lite') { setLite(o.i === 1); return; }
+    if (id === 'hack') { setHack(o.i === 1); return drawJump(id); }
+    drawJump(id);
+  }
+  function okJump(id) {
+    const o = J[id];
+    if (id === 'about') { closeJump(); return toast('area', 'About', 'Home Deck v0.1', 'Fan-made and free. App names and logos belong to their owners. Not affiliated with or endorsed by any of them.', 15000); }
+    if (id === 'order') { closeJump(); store.set('order', {}); renderApps(); arm(); return toast('job', 'Apps', 'Order reset', 'Each group is back in its usual order.'); }
+    if (o.open) {
+      closeJump();
+      if (o.open === 'listener') toast('area', 'Music bar', 'Give it access', `If the TV has no screen for it: ${NATIVE.listenerCommand()}`, 12000);
+      return NATIVE.openSettings(o.open);
+    }
+    if ((id === 'row1' || id === 'row2') && o.vals[o.i] === 'Custom…')
+      return openKbd(`${o.name} // custom`, o.custom, t => { o.custom = t; store.set(id + 'c', t); applyRows(); drawJump(id); });
+    if (id === 'setup') { closeJump(); return setTimeout(openSetup); }
+    if (id === 'ext') { closeJump(); return setTimeout(openExtras); }
+    if (id === 'inp') {
+      const n = J.inp.i;
+      closeJump();
+      if (n === 0) return;
+      if (n === J.inp.vals.length - 1) return goLive();
+      return switchPort(switchable()[n - 1]);
+    }
+    stepJump(id, 1);
+  }
+
+  /* ---- switching inputs ---- */
+  function switchPort(p) {
+    if (p.arc) return toast('area', `HDMI ${p.n}`, 'Audio out (ARC)', `Sound goes out to the ${p.cec || 'sound system'} here. Change it in Jump To, Sound output.`);
+    if (!NATIVE && !p.signal && !p.cec) return toast('warn', `HDMI ${p.n}`, 'No signal', 'Nothing is plugged into this port.');
+    p.signal = true; p.t = Date.now(); renderLive(); arm();
+    linkTo({ name: portName(p), glow: p.glow, img: ICON(p.emblem, '-bg'), sub: `Switching to HDMI ${p.n}` });
+    if (NATIVE) setTimeout(() => NATIVE.switchInput(p.id), 450);
+  }
+
+  /* ---- input detected: an incoming call in the corner ---- */
+  const call = $('call'), callGo = $('callGo'), callNo = $('callNo');
+  let callOpen = false, callPort = null, beforeCall = null;
+  function incoming(p = PORTS[2]) {
+    if (!p || callOpen || trapped || p.arc) return;
+    closeOpts(false);
+    callOpen = true; callPort = p; beforeCall = cur;
+    $('callPort').firstChild.textContent = `Incoming // HDMI ${p.n}`;
+    $('callName').textContent = portName(p); $('callImg').src = ICON(p.emblem, '-bg');
+    call.classList.add('on'); trap(call);
+    callGo.setAttribute('data-f', ''); callNo.setAttribute('data-f', '');
+    TV.focus(callGo);
+  }
+  function endCall(go) {
+    if (!callOpen) return;
+    callOpen = false; call.classList.remove('on');
+    callGo.removeAttribute('data-f'); callNo.removeAttribute('data-f'); callGo.classList.remove('is-focus'); callNo.classList.remove('is-focus');
+    callPort.signal = true; callPort.t = Date.now();
+    untrap(beforeCall);
+    if (go) switchPort(callPort);
+  }
+
+  /* ---- options (hold OK): apps and inputs ---- */
+  const opts = $('opts'), oList = $('oList'), oCharge = $('oCharge');
+  let optsOpen = false, optsFor = null, charge = 8, beforeOpts = null;
+  setInterval(() => { if (charge < 8) { charge++; HD.setMeter(oCharge, charge); if (optsOpen) drawOpts(cur?.dataset.opt); } }, 2500);
+  const BUILT_IN = ['Play Store', 'Media Player'];
+  function optItems() {
+    if (optsFor.port) {
+      const p = PORTS.find(x => x.id === optsFor.port);
+      if (p.arc) return [{ id: 'arc', label: 'Audio out (ARC)', cost: 0, val: 'On' }, { id: 'info', label: 'Info', cost: 1 }];
+      return [{ id: 'switch', label: 'Switch', cost: 0 }, { id: 'rename', label: 'Name', cost: 0, val: nameLabel(names[p.n - 1], p.n) },
+              { id: 'arc', label: 'Audio out (ARC)', cost: 0, val: 'Off' }, { id: 'info', label: 'Info', cost: 1 }];
+    }
+    const app = optsFor.app, pinned = favs.includes(app);
+    return [
+      { id: 'open', label: 'Open', cost: 0 },
+      { id: 'pin', label: pinned ? 'Unpin' : 'Pin to favorites', cost: 1, why: !pinned && !favs.includes(null) ? 'Favorites are full. Unpin one first.' : null },
+      { id: 'move', label: 'Move', cost: 1, why: beforeOpts?.closest('#fav, #apps') ? null : 'Move it in Favorites or in Apps.' },
+      { id: 'info', label: 'Info', cost: 1 },
+      { id: 'del', label: 'Uninstall', cost: 4, why: (NATIVE ? APPS[app].system : BUILT_IN.includes(APPS[app].name)) ? 'Built in. It can\'t be removed.' : null },
+    ];
+  }
+  function drawOpts(keepId) {
+    oList.innerHTML = optItems().map(o => {
+      const why = o.why || (o.cost > charge ? 'Not enough charge. It refills in a few seconds.' : '');
+      return `<div class="hd-menu__item hd-frame${why ? ' is-blocked' : ''}" data-f data-opt="${o.id}" data-why="${why}">
+        <span class="l"><span class="hd-menu__tick" aria-hidden="true"></span>${o.label}</span>${o.val ? `<span class="v"><span>&lsaquo;</span>${esc(o.val)}<span>&rsaquo;</span></span>` : `<span class="hd-key">${o.cost}</span>`}</div>`;
+    }).join('');
+    const again = keepId && oList.querySelector(`[data-opt="${keepId}"]`);
+    if (again) { cur = null; TV.focus(again); }
+  }
+  function openOpts() {
+    if (!cur || optsOpen || trapped) return;
+    const d = cur.dataset;
+    if (d.app == null && !d.port) return;
+    optsFor = d.app != null ? { app: +d.app } : { port: d.port }; optsOpen = true; beforeOpts = cur;
+    $('oTitle').textContent = 'Options // ' + (d.app != null ? APPS[+d.app].name : portName(PORTS.find(x => x.id === d.port)));
+    HD.setMeter(oCharge, charge);
+    const sr = stage.getBoundingClientRect(), kk = sr.width / 1920, cr = cur.getBoundingClientRect();
+    const x = (cr.left - sr.left) / kk, ty = (cr.top - sr.top) / kk;
+    trap(opts); drawOpts();
+    opts.style.left = Math.max(96, Math.min(1824 - 520, x)) + 'px';
+    opts.classList.add('on');
+    opts.style.top = Math.max(190, ty - opts.offsetHeight - 18) + 'px';
+    TV.focus(oList.querySelector('[data-f]')); $('oWhy').textContent = '';
+  }
+  function closeOpts(refocusIt = true) {
+    if (!optsOpen) return;
+    optsOpen = false; opts.classList.remove('on'); oList.innerHTML = '';
+    untrap(refocusIt ? beforeOpts : beforeOpts);
+  }
+  // only one port can be the audio out; marking it moves the sound output to the soundbar over ARC
+  function setArc(p, on) {
+    PORTS.forEach(x => { x.arc = on ? x === p : (x === p ? false : x.arc); });
+    store.set('arc', PORTS.map(x => !!x.arc));
+    if (!NATIVE) { J.snd.i = on ? 1 : (J.snd.i === 1 ? 0 : J.snd.i); store.set('snd', J.snd.i); }
+    renderInputs(); renderLive(); arm();
+    toast('area', `HDMI ${p.n}`, on ? 'Audio out (ARC)' : 'Back to an input', on ? 'Sound goes out here now. It is no longer offered as an input.' : 'It can be switched to again.');
+  }
+  function stepName(p, d) {
+    if (p.arc) return;
+    names[p.n - 1] = (names[p.n - 1] + d + NAMES.length) % NAMES.length; store.set('names2', names);
+    renderInputs(); renderLive(); arm();
+  }
+  function runOpt(el, dir = 1, ok = true) {
+    const id = el.dataset.opt;
+    if (el.classList.contains('is-blocked')) { $('oWhy').textContent = el.dataset.why; return; }
+    const it = optItems().find(o => o.id === id);
+    charge -= it.cost; HD.setMeter(oCharge, charge);
+    if (optsFor.port) {
+      const p = PORTS.find(x => x.id === optsFor.port);
+      if (id === 'arc') {
+        setArc(p, !p.arc); beforeOpts = stage.querySelector(`#inp [data-port="${p.id}"]`);
+        $('oTitle').textContent = 'Options // ' + portName(p); return drawOpts('arc');
+      }
+      if (id === 'rename' && ok && isCustom(names[p.n - 1])) return openKbd(`HDMI ${p.n} // name`, customNames[p.n - 1], t => {
+        customNames[p.n - 1] = t; store.set('names-custom', customNames); renderInputs(); renderLive(); arm();
+        $('oTitle').textContent = 'Options // ' + portName(p); drawOpts('rename'); });
+      if (id === 'rename') { stepName(p, dir); saved = saved.filter(x => x.isConnected); saved.push(...stage.querySelectorAll('#inp [data-fi]')); stage.querySelectorAll('#inp [data-fi]').forEach(x => x.removeAttribute('data-f')); beforeOpts = stage.querySelector(`#inp [data-port="${p.id}"]`); $('oTitle').textContent = 'Options // ' + portName(p); return drawOpts('rename'); }
+      closeOpts();
+      if (id === 'switch') return switchPort(p);
+      if (id === 'info') return openInfo({ port: p.id });
+      return;
+    }
+    const app = optsFor.app, name = APPS[app].name;
+    if (id === 'open') { closeOpts(); stage.querySelector(`.section:not(.is-off) [data-app="${app}"]`)?.click(); return; }
+    if (id === 'pin') {
+      if (favs.includes(app)) { favs[favs.indexOf(app)] = null; toast('job', 'Favorites', `${name} unpinned`, 'Its spot stays free until you pin something.'); }
+      else { favs[favs.indexOf(null)] = app; toast('job', 'Favorites', `${name} pinned`, 'It took the free spot.'); }
+    }
+    if (id === 'move') { const el = beforeOpts; closeOpts(); return startMove(cur && cur.dataset.app === el?.dataset.app ? cur : el); }
+    if (id === 'del') { if (NATIVE) NATIVE.uninstall(APPS[app].pkg); else toast('warn', 'Uninstall', `${name} stays`, 'This is a preview, so nothing is removed.'); }
+    if (id === 'pin' || id === 'move') {
+      saveFavs(); renderFavs();
+      optsOpen = false; opts.classList.remove('on'); oList.innerHTML = '';
+      trapped = false; saved = []; arm();
+      cur = null; TV.focus(stage.querySelector(`.section:not(.is-off) [data-app="${app}"]`) || $('fav').querySelector('[data-f]'));
+      return;
+    }
+    closeOpts();
+    if (id === 'info') openInfo({ app });
+  }
+
+  /* ---- Move: Left and Right slide the app along its row (the others slide aside), Up and Down change lines in a
+     group that wraps. OK places it, Back puts it back. Favorites reorder (a free spot is a place too); Apps reorder
+     inside each group, and the order is kept by package. Only transforms animate, and only this row changes. */
+  let moving = null;
+  function startMove(el) {
+    const box = el?.closest('#fav, #apps .tiles');
+    if (!box) return toast('job', 'Move', 'Not here', 'Move apps in Favorites or in Apps.');
+    moving = { el, box, app: +el.dataset.app };
+    el.classList.add('is-moving'); box.classList.add('has-moving');
+    el.insertAdjacentHTML('beforeend', '<i class="mv-arrows" aria-hidden="true"><b>&#9664;</b><b>&#9654;</b></i>');
+    toast('job', 'Move', APPS[moving.app].name, 'Left and right move it. OK places it here, Back puts it back.', 600000);
+  }
+  function slideTo(i) {
+    const { el, box } = moving, tiles = [...box.children];
+    if (i < 0 || i >= tiles.length || i === tiles.indexOf(el)) return;
+    const k = stage.getBoundingClientRect().width / 1920, before = new Map(tiles.map(t => [t, t.getBoundingClientRect()]));
+    box.insertBefore(el, tiles.filter(t => t !== el)[i] || null);
+    tiles.forEach(t => {      // each tile that moved slides from where it was
+      const a = before.get(t), b = t.getBoundingClientRect(), dx = (a.left - b.left) / k, dy = (a.top - b.top) / k;
+      if (dx || dy) t.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0px 0px' }], { duration: 220, easing: 'cubic-bezier(.2, 0, 0, 1)' });
+    });
+  }
+  function slideLine(dir) {    // to the nearest place on the line above or below, in a group that wraps
+    const { el, box } = moving, tiles = [...box.children];
+    const tops = [...new Set(tiles.map(t => t.offsetTop))].sort((a, b) => a - b), line = tops.indexOf(el.offsetTop) + dir;
+    if (line < 0 || line >= tops.length) return;
+    const x = el.offsetLeft, there = tiles.filter(t => t.offsetTop === tops[line]);
+    slideTo(tiles.indexOf(there.reduce((a, b) => Math.abs(b.offsetLeft - x) < Math.abs(a.offsetLeft - x) ? b : a)));
+  }
+  function endMove(place) {
+    const { el, box, app } = moving, fav = box.id === 'fav';
+    moving = null;
+    document.querySelectorAll('.hd-toast').forEach(t => t.remove());
+    if (place && fav) { favs = [...box.children].map(t => t.dataset.app != null ? +t.dataset.app : null); saveFavs(); }
+    if (place && !fav) {
+      const order = store.get('order', {});
+      order[box.closest('.row').dataset.group] = [...box.children].map(t => APPS[+t.dataset.app].pkg || APPS[+t.dataset.app].name);
+      store.set('order', order);
+    }
+    if (fav) renderFavs(); else renderApps();
+    arm(); cur = null;
+    TV.focus(stage.querySelector(`.section:not(.is-off) ${fav ? '#fav' : '#apps'} [data-app="${app}"]`) || stage.querySelector('.section:not(.is-off) [data-f]'));
+  }
+
+  /* ---- Info as a scanner ---- */
+  const info = $('info');
+  let infoOpen = false, beforeInfo = null;
+  function openInfo(o) {
+    infoOpen = true; beforeInfo = cur;
+    const r = HD.rng(o.app != null ? APPS[o.app].name : o.port), num = (a, b) => a + Math.floor(r() * (b - a));
+    let art, title, tags, glow;
+    if (o.app != null) {
+      const a = APPS[o.app]; glow = a.glow; title = `Scan // ${a.name}`;
+      art = a.file ? `<div class="art"><img src="${ICON(a.file)}" alt=""></div>` : badge({ c: a.glow, img: a.plain, init: initials(a.name), cap: a.name });
+      if (NATIVE) {
+        const n = NATIVE.appInfo(a.pkg), day = t => new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        tags = [['Version', n.version || 'Not given'], ['Installed', n.installed ? day(n.installed) : 'Unknown'], ['Updated', n.updated ? day(n.updated) : 'Unknown'],
+                ['Opened here', lastOpened(o.app) === Infinity ? 'Not yet' : agoText(lastOpened(o.app))], ['Kind', a.kind]];
+      } else {
+      const size = num(28, 160), cache = num(8, 420);
+      tags = [['Size', `${size} MB`], ['Version', `${num(1, 12)}.${num(0, 60)}.${num(0, 9)}`], ['Updated', ['Today', 'Yesterday', '3 days ago', 'Last week'][num(0, 4)]],
+              ['Storage', `${size} MB app // ${cache} MB cache`], ['Kind', a.kind]];
+      }
+    } else {
+      const p = PORTS.find(x => x.id === o.port); glow = p.glow; title = `Scan // HDMI ${p.n}`;
+      art = badge({ c: p.glow, img: ICON(p.emblem, '-bg'), cap: portName(p) });
+      tags = p.arc ? [['Port', `HDMI ${p.n}`], ['Role', 'Audio out (ARC)'], ['Device says', p.cec || 'Nothing'], ...(NATIVE ? [] : [['Sound output', J.snd.vals[J.snd.i]], ['Picture', 'None']])]
+        : [['Port', `HDMI ${p.n}`], ['Device says', p.cec || 'Nothing'], ['Signal', p.signal ? 'Yes' : 'No'], ...(p.pic ? [['Picture', p.pic], ['Sound', p.audio]] : [])];
+    }
+    setGlitchText($('iTitle'), title);
+    $('iArt').innerHTML = art; $('iArt').style.setProperty('--glow', glow);
+    $('iTags').innerHTML = tags.map(([k, v]) => `<span class="hd-tag"><span class="hd-tag__tick"></span>${k} <b>${esc(v)}</b></span>`).join('');
+    info.hidden = false; trap(info);
+    // leader lines from points on the art to each tag
+    const tagEls = [...$('iTags').children], box = info.querySelector('.info__box').getBoundingClientRect(), k = box.width / 1320;
+    const pts = [[490, 170], [470, 250], [450, 320], [470, 400], [490, 470]];
+    $('iLines').innerHTML = tagEls.map((t, n) => {
+      const tr = t.getBoundingClientRect(), y = (tr.top + tr.height / 2 - box.top) / k, x = (tr.left - box.left) / k;
+      const [ax, ay] = pts[n % pts.length];
+      return `<polyline points="${ax},${ay} ${x - 40},${y} ${x - 6},${y}" fill="none" stroke="rgba(var(--hd-chrome-rgb),.75)" stroke-width="1.5"/><rect x="${ax - 4}" y="${ay - 4}" width="8" height="8" fill="${glow}"/>`;
+    }).join('');
+    const sa = $('iArt'); sa.classList.remove('go'); void sa.offsetWidth; sa.classList.add('go');
+    $('iClose').setAttribute('data-f', ''); TV.focus($('iClose')); HD.glitch($('iTitle'));
+  }
+  function closeInfo() { if (!infoOpen) return; infoOpen = false; info.hidden = true; $('iClose').removeAttribute('data-f'); untrap(beforeInfo); }
+
+  /* ---- Scan: search with a letter grid, typing or voice ---- */
+  const search = $('search');
+  let searchOpen = false, query = '', beforeSearch = null;
+  const KEYS = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'];
+  $('sKeys').innerHTML = KEYS.map(c => `<button class="hd-btn skey" type="button" data-key="${c}">${c}</button>`).join('') +
+    '<button class="hd-btn skey skey--wide" type="button" data-key=" ">Space</button><button class="hd-btn skey skey--wide" type="button" data-key="DEL">Delete</button>';
+  function drawSearch(keepFocus) {
+    $('sField').innerHTML = query ? `${esc(query)}<span class="caret"></span>` : '<span class="caret"></span><span class="ph">Type an app name, or press Voice</span>';
+    const hits = APPS.map((a, i) => [a, i]).filter(([a]) => !query || a.name.toLowerCase().includes(query.toLowerCase().trim())).slice(0, 9);
+    $('sRes').innerHTML = hits.length ? hits.map(([, i]) => appTile(i, 'art--sm', 'data-res')).join('') : '<span class="search__none">No app by that name on this TV.</span>';
+    search.querySelectorAll('.skey, #sMic, #sRes [data-fi]').forEach(el => el.setAttribute('data-f', ''));
+    if (keepFocus && !keepFocus.isConnected) { cur = null; TV.focus(search.querySelector('.skey')); }
+  }
+  function openSearch() {
+    if (searchOpen || trapped) return;
+    searchOpen = true; beforeSearch = cur; query = ''; $('sHeard').textContent = '';
+    search.hidden = false; trap(search); drawSearch();
+    TV.focus(search.querySelector('.skey'));
+  }
+  function closeSearch() { if (!searchOpen) return; searchOpen = false; search.hidden = true; search.querySelectorAll('[data-f]').forEach(el => el.removeAttribute('data-f')); untrap(beforeSearch); }
+  function typeKey(c) { query = c === 'DEL' ? query.slice(0, -1) : (query + c).slice(0, 24); drawSearch(cur); }
+  function voice() {
+    if (NATIVE) { $('sHeard').textContent = 'Voice search is coming later. Type the name instead.'; return; }
+    $('sHeard').innerHTML = '<span class="hd-wave" aria-hidden="true"><i style="--h:40%"></i><i style="--h:90%"></i><i style="--h:60%"></i><i style="--h:80%"></i></span> Listening...';
+    setTimeout(() => { if (!searchOpen) return; query = 'spot'; $('sHeard').textContent = 'Heard: "Spotify"'; drawSearch(cur); }, reduce ? 300 : 1300);
+  }
+
+  /* ---- first-run setup: favorites, color, input names ---- */
+  const setup = $('setup');
+  let setupOpen = false, step = 0;
+  const STEP_T = [['Pick your favorites', 'Up to seven apps for the top row. OK picks or unpicks.'],
+                  ['Pick a color', 'It tints the whole screen. You can change it later in Jump To.'],
+                  ['Name your inputs', 'Left and right choose a name. Auto uses the name the device gives itself.'],
+                  ['Online extras (optional)', 'Everything works offline. Extras only connect when you switch them on. Skip this if you like.']];
+  function drawSetup() {
+    $('stSteps').innerHTML = STEP_T.map((s, n) => `<span class="${n === step ? 'on' : ''}">${n + 1} // ${s[0]}</span>`).join('');
+    $('stTitle').textContent = STEP_T[step][0]; $('stText').textContent = STEP_T[step][1];
+    $('stBack').hidden = step === 0; $('stNext').textContent = step === 3 ? 'Done' : 'Next';
+    if (step === 0) $('stBody').innerHTML = `<div class="setup__grid">${APPS.map((_, i) => appTile(i, 'art--xs' + (favs.includes(i) ? ' is-picked' : ''), 'data-pick').replace('data-app=', 'data-pickapp=')).join('')}</div>`;
+    if (step === 1) $('stBody').innerHTML = `<div class="tiles">${ACCENTS.map((a, n) => `<div class="sw${n === J.acc.i ? ' is-picked' : ''}" data-sw="${n}" style="--sw:${a[1]}">${a[0]}</div>`).join('')}</div>`;
+    if (step === 2) $('stBody').innerHTML = `<div style="display:grid;gap:12px">${PORTS.map(p => `<div class="nl hd-frame" data-nl="${p.id}"><span class="nl__port">HDMI ${p.n}</span><span class="nl__val">${p.arc ? 'Audio out (ARC) // a sound output, set in Inputs' : `<span>&lsaquo;</span>${esc(nameLabel(names[p.n - 1], p.n))}${NAMES[names[p.n - 1]] === 'Auto' ? ` // ${esc(portName(p))}` : ''}<span>&rsaquo;</span>`}</span></div>`).join('')}</div>`;
+    if (step === 3) { $('stBody').innerHTML = '<div id="exSetup"></div>'; drawEx($('exSetup')); }
+    setup.querySelectorAll('#stBody [data-pick], #stBody [data-sw], #stBody [data-nl], #stBody [data-ex], .setup__foot .hd-btn:not([hidden])').forEach(el => el.setAttribute('data-f', ''));
+    setup.querySelectorAll('.setup__foot .hd-btn[hidden]').forEach(el => el.removeAttribute('data-f'));
+  }
+  function openSetup() {
+    if (setupOpen) return;
+    if (trapped) return;
+    setupOpen = true; step = 0; setup.hidden = false; trap(setup); drawSetup();
+    TV.focus(setup.querySelector('#stBody [data-f]'));
+  }
+  function setupGo(d) {
+    step += d;
+    if (step > 3 || step < 0) return closeSetup(true);
+    drawSetup(); cur = null; TV.focus(setup.querySelector('#stBody [data-f]'));
+  }
+  function closeSetup(done) {
+    if (!setupOpen) return;
+    setupOpen = false; setup.hidden = true; setup.querySelectorAll('[data-f]').forEach(el => el.removeAttribute('data-f'));
+    store.set('setup-done', true);
+    renderAll(); untrap($('fav').querySelector('[data-fi]'));
+    if (done) { toast('reward', 'Setup', 'All set', 'Run it again any time from Jump To.'); setTimeout(() => showHints(), 4000); }
+    else showHints();
+  }
+  function pickFav(el) {
+    const i = +el.dataset.pickapp;
+    if (favs.includes(i)) favs[favs.indexOf(i)] = null;
+    else if (favs.includes(null)) favs[favs.indexOf(null)] = i;
+    else return toast('job', 'Favorites', 'Seven at most', 'Unpick one first.');
+    saveFavs(); el.classList.toggle('is-picked', favs.includes(i));
+  }
+
+  /* ---- on-screen keyboard: custom row and input names; arrows plus OK, or real typing; Back cancels ---- */
+  const kbd = $('kbd');
+  let kbdOpen = false, kbdText = '', kbdCb = null, kbdBack = null, kbdSaved = [];
+  $('kKeys').innerHTML = KEYS.map(c => `<button class="hd-btn skey" type="button" data-kkey="${c}">${c}</button>`).join('') +
+    '<button class="hd-btn skey skey--wide" type="button" data-kkey=" ">Space</button><button class="hd-btn skey skey--wide" type="button" data-kkey="DEL">Delete</button>';
+  function drawKbd() {
+    $('kField').innerHTML = kbdText ? `${esc(kbdText)}<span class="caret"></span>` : '<span class="caret"></span><span class="ph">Type a name</span>';
+    $('kCount').textContent = `${kbdText.length} / 24`;
+  }
+  function kType(c, raw) {
+    if (c === 'DEL') kbdText = kbdText.slice(0, -1);
+    else if (kbdText.length < 24) {
+      // grid letters: a capital to start each word, small after that; real typing keeps its own case
+      const start = !kbdText || kbdText.endsWith(' ');
+      kbdText += raw || !/[A-Z]/.test(c) ? c : start ? c : c.toLowerCase();
+    }
+    drawKbd();
+  }
+  function openKbd(title, value, cb) {
+    kbdOpen = true; kbdText = value || ''; kbdCb = cb; kbdBack = cur;
+    $('kTitle').textContent = title;
+    kbdSaved = [...stage.querySelectorAll('[data-f]')].filter(el => !kbd.contains(el));
+    kbdSaved.forEach(el => el.removeAttribute('data-f'));
+    kbd.hidden = false; kbd.querySelectorAll('.skey, #kCancel, #kDone').forEach(el => el.setAttribute('data-f', ''));
+    drawKbd(); cur = null; TV.focus(kbd.querySelector('.skey'));
+  }
+  function closeKbd(save) {
+    if (!kbdOpen) return;
+    kbdOpen = false; kbd.hidden = true;
+    kbd.querySelectorAll('[data-f]').forEach(el => el.removeAttribute('data-f'));
+    kbdSaved.forEach(el => el.isConnected && el.setAttribute('data-f', '')); kbdSaved = [];
+    cur = null; if (kbdBack?.isConnected) TV.focus(kbdBack);
+    const t = kbdText.trim();
+    if (save && t) kbdCb(t);
+  }
+  // true when no control in the box sits below this one (so Down can go to the box's main button)
+  function nothingBelow(box, el) {
+    if (!el || !box.contains(el)) return false;
+    const r = el.getBoundingClientRect(), cy = r.top + r.height / 2;
+    return ![...box.querySelectorAll('[data-f]')].some(x => { const q = x.getBoundingClientRect(); return q.top + q.height / 2 > cy + 20; });
+  }
+
+  /* =====================================================================
+     Online extras. The home screen works offline; an extra only connects once it is switched on.
+     Weather uses Open-Meteo (free, no key): geocoding to find a typed city, then the forecast every 30 minutes.
+     With weather off, nothing here ever calls the network.
+     ===================================================================== */
+  const CITIES = [['New York', 40.7128, -74.006], ['Los Angeles', 34.0522, -118.2437], ['Chicago', 41.8781, -87.6298],
+                  ['London', 51.5074, -0.1278], ['Tokyo', 35.6762, 139.6503], ['Washington DC', 38.9072, -77.0369]];
+  const WX = { on: !!store.get('wx-on', false), city: store.get('wx-city', null), unit: store.get('wx-unit', 'F') === 'C' ? 'C' : 'F',
+               cache: store.get('wx-cache', null), stale: false, note: '', busy: false };
+  // the six original line-art icons and the WMO weather codes they stand for
+  const ICONS = {
+    clear: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><circle cx="24" cy="24" r="8"/><path d="M24 6v6M24 36v6M6 24h6M36 24h6M11.3 11.3l4.2 4.2M32.5 32.5l4.2 4.2M11.3 36.7l4.2-4.2M32.5 15.5l4.2-4.2"/></svg>',
+    cloudy: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="bevel"><path d="M12 34h24a7 7 0 0 0 0-14h-1a10 10 0 0 0-19 2 6 6 0 0 0-4 12z"/></svg>',
+    rain: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="bevel"><path d="M12 28h24a7 7 0 0 0 0-14h-1a10 10 0 0 0-19 2 6 6 0 0 0-4 12z"/><path d="M16 33l-3 7M25 33l-3 7M34 33l-3 7"/></svg>',
+    storm: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="bevel"><path d="M12 28h24a7 7 0 0 0 0-14h-1a10 10 0 0 0-19 2 6 6 0 0 0-4 12z"/><path d="M26 30l-6 8h7l-4 7"/></svg>',
+    snow: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="bevel"><path d="M12 28h24a7 7 0 0 0 0-14h-1a10 10 0 0 0-19 2 6 6 0 0 0-4 12z"/><path d="M16 34v6M13 37h6M28 34v6M25 37h6"/></svg>',
+    fog: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"><path d="M8 16h26M14 24h28M8 32h26M16 40h18"/></svg>',
+  };
+  function wmo(c) {
+    if (c === 0) return ['clear', 'Clear'];
+    if (c === 1) return ['clear', 'Mostly clear'];
+    if (c === 2) return ['cloudy', 'Partly cloudy'];
+    if (c === 3) return ['cloudy', 'Cloudy'];
+    if (c === 45 || c === 48) return ['fog', 'Fog'];
+    if (c >= 51 && c <= 57) return ['rain', 'Drizzle'];
+    if ((c >= 61 && c <= 67) || (c >= 80 && c <= 82)) return ['rain', c >= 80 ? 'Showers' : 'Rain'];
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) return ['snow', 'Snow'];
+    if (c >= 95) return ['storm', 'Storm'];
+    return ['cloudy', 'Cloudy'];
+  }
+  const deg = f => Math.round(WX.unit === 'C' ? (f - 32) * 5 / 9 : f);          // always fetched in Fahrenheit
+  const ageText = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)}h ago`; };
+  function drawWx() {
+    const el = $('wx'), c = WX.cache, show = WX.on && WX.city && c && c.city === WX.city.name;
+    el.hidden = !show; $('top').classList.toggle('has-wx', !!show);
+    if (!show) return;
+    const old = Date.now() - c.t > 90 * 60000, stale = WX.stale || old;
+    const [ico, word] = wmo(c.code);
+    $('wxIco').innerHTML = ICONS[ico];
+    $('wxTemp').innerHTML = `${deg(c.temp)}&deg;<small>${WX.unit}</small>`;
+    $('wxCond').textContent = `${word} // H ${deg(c.hi)}° L ${deg(c.lo)}°`;
+    $('wxCity').textContent = `${c.city} // ${stale ? 'last update ' : 'updated '}${ageText(c.t)}`;
+    el.classList.toggle('is-stale', stale);
+  }
+  async function wxFetch() {
+    if (!WX.on || !WX.city) return;                           // off: no network, ever
+    const { lat, lon, name } = WX.city;
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
+    try {
+      const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      if (!WX.on || WX.city?.name !== name) return;           // switched off or changed city while waiting
+      WX.cache = { t: Date.now(), city: name, temp: j.current.temperature_2m, code: j.current.weather_code, hi: j.daily.temperature_2m_max[0], lo: j.daily.temperature_2m_min[0] };
+      WX.stale = false; store.set('wx-cache', WX.cache);
+    } catch { WX.stale = true; }                              // offline or failed: keep the last reading, dimmed; never an error on screen
+    drawWx();
+  }
+  setInterval(wxFetch, 30 * 60000);
+  async function findCity(text) {
+    WX.note = 'Looking up...'; redrawEx('city');
+    try {
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(text)}&count=1`, { cache: 'no-store' });
+      const j = await r.json(), g = j.results && j.results[0];
+      if (!g) { WX.note = `No city called "${text}"`; return redrawEx('city'); }
+      WX.city = { name: g.name, lat: +g.latitude.toFixed(4), lon: +g.longitude.toFixed(4) }; WX.note = '';
+      store.set('wx-city', WX.city); redrawEx('city'); wxFetch();
+    } catch { WX.note = 'Offline. Try again later.'; redrawEx('city'); }
+  }
+  let cityTimer;
+  function setCity(c) {
+    WX.city = { name: c[0], lat: c[1], lon: c[2] }; WX.note = ''; store.set('wx-city', WX.city); drawWx();
+    clearTimeout(cityTimer); cityTimer = setTimeout(wxFetch, 700);   // wait until the viewer stops on a city
+  }
+  function exLines() {
+    const on = WX.on, cityName = WX.city?.name || 'Pick a city';
+    return [
+      { id: 'on', name: 'Weather', desc: 'Connects to Open-Meteo (open-meteo.com) for the forecast in your city. No account, no key.', val: on ? 'On' : 'Off', arrows: true },
+      ...(on ? [{ id: 'city', sub: true, name: 'City', desc: WX.note || 'Left and right for a list; OK to type any city.', val: cityName, arrows: true },
+                { id: 'unit', sub: true, name: 'Units', desc: 'Fahrenheit or Celsius.', val: WX.unit === 'C' ? '°C' : '°F', arrows: true }] : []),
+      { id: 'art', off: true, name: 'Show artwork', desc: 'Would connect to an online film and TV database for posters.', val: 'Coming later' },
+      { id: 'voice', off: true, name: 'Voice search', desc: 'Would send your voice to a speech service to turn it into words.', val: 'Coming later' },
+    ];
+  }
+  let exHost = null;
+  function drawEx(host, keep) {
+    exHost = host;
+    host.innerHTML = exLines().map(l => `<div class="exl hd-frame${l.sub ? ' exl--sub' : ''}${l.off ? ' exl--off' : ''}" ${l.off ? '' : `data-ex="${l.id}" data-f`}>
+      <span class="exl__name">${l.name}</span><span class="exl__val">${l.arrows ? '<span>&lsaquo;</span>' : ''}${esc(l.val)}${l.arrows ? '<span>&rsaquo;</span>' : ''}</span>
+      <span class="exl__desc">${esc(l.desc)}</span></div>`).join('');
+    const again = keep && host.querySelector(`[data-ex="${keep}"]`);
+    if (again) { cur = null; TV.focus(again); }
+  }
+  function redrawEx(keep) { if (exHost?.isConnected && (extrasOpen || setupOpen)) drawEx(exHost, keep || cur?.dataset.ex); }
+  function exStep(id, d) {
+    if (id === 'on') { WX.on = !WX.on; store.set('wx-on', WX.on); if (WX.on && !WX.city) setCity(CITIES[0]); else if (WX.on) wxFetch(); drawWx(); }
+    if (id === 'unit') { WX.unit = WX.unit === 'F' ? 'C' : 'F'; store.set('wx-unit', WX.unit); drawWx(); }
+    if (id === 'city') {
+      const i = CITIES.findIndex(c => c[0] === WX.city?.name);
+      setCity(CITIES[(i + d + CITIES.length) % CITIES.length]);
+    }
+    redrawEx(id);
+  }
+  function exOk(id) {
+    if (id === 'city') return openKbd('Weather // city', '', t => findCity(t));
+    exStep(id, 1);
+  }
+  const extras = $('extras'), exList = $('exList');
+  let extrasOpen = false, beforeExtras = null;
+  function openExtras() {
+    if (extrasOpen || trapped) return;
+    extrasOpen = true; beforeExtras = cur; trap(extras);
+    extras.hidden = false; drawEx(exList);
+    TV.focus(exList.querySelector('[data-f]'));
+  }
+  function closeExtras() {
+    if (!extrasOpen) return;
+    extrasOpen = false; extras.hidden = true; exList.innerHTML = ''; untrap(beforeExtras);
+  }
+  drawWx();
+
+  /* =====================================================================
+     The linking screen
+     ===================================================================== */
+  const launchEl = stage.querySelector('.launch');
+  let linkTimers = [];
+  const STEPS = ['Handshake', 'Verify signal', 'Sync profile', 'Open stream'];
+  TV.renderLaunch = (el, app) => {
+    linkTimers.forEach(clearTimeout); linkTimers = [];
+    el.style.setProperty('--glow', app.glow);
+    const art = app.file ? `<img src="${ICON(app.file)}" alt="">` : app.img ? `<img src="${app.img}" alt="">` : badge({ c: app.glow, img: app.plain, init: initials(app.name), cap: app.name });
+    el.innerHTML = `
+      <div class="link">
+        <div class="link__halo" aria-hidden="true"></div>
+        <div class="hd-panel hd-panel--spine">
+          <div class="link__main">
+            <div class="link__steps"><span class="hd-label hd-label--act">${app.sub || 'Establishing link'}</span><span class="hd-code">${HD.strings.port(HD.rng(app.name))}</span></div>
+            <span class="hd-title-card link__title" data-hd-glitch-text data-layers="2">${esc(app.name)}</span>
+            <div class="hd-progress" style="--p:0">
+              <div class="hd-progress__strip"></div>
+              <div class="hd-progress__label" data-l>Linking</div>
+              <div class="hd-progress__foot"><span>${HD.strings.id(HD.rng(app.name + 'id'))}</span><span data-pc>0%</span></div>
+            </div>
+            <div class="hd-log" data-log></div>
+          </div>
+          <div class="scanart go" style="--glow:${app.glow}">${art}</div>
+        </div>
+      </div>`;
+    HD.init(el);
+    HD.glitch(el.querySelector('.link__title'));
+    const prog = el.querySelector('.hd-progress'), pc = el.querySelector('[data-pc]'), log = el.querySelector('[data-log]');
+    STEPS.forEach((s, n) => linkTimers.push(setTimeout(() => {
+      const p = (n + 1) / STEPS.length;
+      prog.style.setProperty('--p', p); pc.textContent = Math.round(p * 100) + '%';
+      log.insertAdjacentHTML('beforeend', `<div class="hd-log__line"><span>//${s.toUpperCase().replace(/ /g, '_')}</span><span>OK</span></div>`);
+      if (n === STEPS.length - 1) { el.querySelector('[data-l]').textContent = 'Link established'; HD.glitch(el.querySelector('.link__title')); }
+    }, 220 + n * 320)));
+  };
+  let inputLink = false, inputTimer;
+  function linkTo(o) {
+    inputLink = true;
+    TV.renderLaunch(launchEl, o); launchEl.classList.add('on');
+    clearTimeout(inputTimer); inputTimer = setTimeout(endLink, 1800);
+  }
+  function goLive() { linkTo({ name: 'Live TV', glow: '#ffb21e', img: ICON('live-tv') }); if (NATIVE) setTimeout(() => NATIVE.openLiveTv(), 450); }
+  function endLink() { if (!inputLink) return; inputLink = false; clearTimeout(inputTimer); launchEl.classList.remove('on'); }
+
+  /* ---- the now-playing radio ---- */
+  const meter = $('rMeter'); meter.innerHTML = '<i></i>'.repeat(12);
+  setInterval(() => {   // about 2.5 changes a second on a small element
+    if (NOW.playing) {
+      [...meter.children].forEach((b, n) => { b.style.setProperty('--s', ((15 + Math.random() * (90 - n * 4)) / 100).toFixed(2)); });
+      if (NOW.t >= 0) NOW.t = NATIVE ? (NOW.len ? Math.min(NOW.t + 0.4, NOW.len) : NOW.t + 0.4) : (NOW.t + 0.4) % NOW.len; drawTime();
+      if (NOW.len) $('cw').querySelector(`[data-app="${NOW.app}"]`)?.style.setProperty('--p', (NOW.t / NOW.len).toFixed(3));
+    }
+  }, 400);
+  function togglePlay() {
+    if (NATIVE) { if (!NOW.track) return; NATIVE.playPause(); }
+    NOW.playing = !NOW.playing; $('radio').classList.toggle('is-paused', !NOW.playing);
+    const card = $('cw').querySelector(`[data-app="${NOW.app}"] .cw__sub`); if (card) card.textContent = playLine();
+    if (cur && (cur.id === 'rPlay' || +cur.dataset.app === NOW.app)) show(infoFor(cur));
+  }
+  Marquee.setup($('rStation')); Marquee.setup(document.querySelector('.radio__track'));
+  let radioText = '';
+  const scrollRadio = () => document.querySelectorAll('.radio .mq-box').forEach(Marquee.update);
+  document.fonts?.ready.then(scrollRadio);
+  let timeText = null;
+  function drawTime() {   // elapsed / total from the media session; blank when the app doesn't say
+    const t = NOW.t >= 0 ? fmt(Math.floor(NOW.t)) : '', tot = t && NOW.len ? fmt(Math.floor(NOW.len)) : '';
+    if (t + '|' + tot === timeText) return;
+    timeText = t + '|' + tot;
+    $('rFreq').innerHTML = t + (tot ? `<span class="radio__total"> / ${tot}</span>` : '');
+  }
+  function drawRadio() {
+    const a = APPS[NOW.app], on = !NATIVE || !!NOW.track, rp = $('rPlay');
+    $('radio').style.visibility = on ? '' : 'hidden';
+    if (!on) { rp.removeAttribute('data-f'); saved = saved.filter(x => x !== rp); if (cur === rp) { cur = null; TV.focus(stage.querySelector('.section:not(.is-off) [data-f]')); } }
+    else if (trapped) { if (!saved.includes(rp)) saved.push(rp); } else rp.setAttribute('data-f', '');
+    $('radio').style.setProperty('--app', a ? a.glow : '#5ef6ff');
+    $('radio').classList.toggle('no-station', !NOW.station);   // no album: the title line sits alone, the app named once
+    $('rApp').textContent = a ? a.name : NOW.label; $('rStation').textContent = NOW.station; $('rTrack').textContent = NOW.track; $('rArtist').textContent = NOW.artist;
+    $('radio').classList.toggle('is-paused', !NOW.playing); drawTime();
+    const text = `${NOW.station}|${NOW.track}|${NOW.artist}`;   // a new track scrolls from the start again
+    if (text !== radioText) { radioText = text; requestAnimationFrame(scrollRadio); }
+  }
+  drawRadio();
+  if (NATIVE) NATIVE.on('now', np => {
+    const i = np.pkg ? APPS.findIndex(a => a.pkg === np.pkg) : -1;
+    Object.assign(NOW, np.title ? { app: i, label: np.label, station: np.album && np.album !== np.title && np.album !== np.label ? np.album : '', track: np.title, artist: np.artist,
+      playing: np.playing, t: np.elapsed >= 0 ? np.elapsed : -1, len: Math.max(0, np.total) } : { app: -1, label: '', track: '', artist: '', playing: false });
+    const prev = cur; drawRadio(); renderRecent(); arm(); refocus(prev);
+    if (cur && (cur.id === 'rPlay' || cur.dataset.app != null)) show(infoFor(cur));
+  });
+
+  // opening an app makes it the most recent one; Jump back in reorders when you come back to the home screen
+  let openSeq = 0, opened = null;
+  TV.onBack = () => {
+    if (opened == null) return;
+    if (OPENED) OPENED = NATIVE.recents(); else AGO[opened] = -(++openSeq);
+    opened = null;
+    const wasIn = cur?.closest('#cw'), id = cur?.dataset.app;
+    renderRecent(); arm();
+    if (wasIn) { cur = null; TV.focus($('cw').querySelector(`[data-app="${id}"]`) || $('cw').querySelector('[data-f]')); }
+  };
+  stage.addEventListener('tv:select', e => {
+    if (e.detail.dataset.app != null && e.detail.dataset.pickapp == null) opened = +e.detail.dataset.app;
+    if (NATIVE && e.detail.dataset.app != null && e.detail.dataset.pickapp == null) {
+      const a = APPS[+e.detail.dataset.app];
+      setTimeout(() => { if (!NATIVE.launch(a.pkg)) { TV.back(); toast('warn', 'Open', a.name, 'This app could not be opened.'); } }, 450);
+    }
+    const el = e.detail, d = el.dataset;
+    // tv.js is still inside its OK handler here; anything that moves the focus waits a tick
+    if (el === callGo) return setTimeout(() => endCall(true));
+    if (el === callNo) return setTimeout(() => endCall(false));
+    if (el.id === 'iClose') return setTimeout(closeInfo);
+    if (d.opt) return setTimeout(() => runOpt(el));
+    if (d.jl) return setTimeout(() => okJump(d.jl));
+    if (d.key) return typeKey(d.key);
+    if (el.id === 'sMic') return voice();
+    if (d.res != null) return setTimeout(closeSearch, 50);
+    if (d.pick != null) return pickFav(el);
+    if (d.sw != null) { J.acc.i = +d.sw; store.set('acc', J.acc.i); applyRows(); setup.querySelectorAll('.sw').forEach(s => s.classList.toggle('is-picked', s === el)); return; }
+    if (d.ex) return setTimeout(() => exOk(d.ex));
+    if (d.nl) {
+      const p = PORTS.find(x => x.id === d.nl);
+      if (p.arc) return toast('area', `HDMI ${p.n}`, 'Audio out (ARC)', 'A sound output, not an input. Change it in Inputs.');
+      if (isCustom(names[p.n - 1])) return openKbd(`HDMI ${p.n} // name`, customNames[p.n - 1], t => {
+        customNames[p.n - 1] = t; store.set('names-custom', customNames); renderInputs(); renderLive(); drawSetupKeep(d.nl); });
+      return stepName(p, 1), drawSetupKeep(d.nl);
+    }
+    if (d.kkey) return kType(d.kkey);
+    if (el.id === 'kDone') return setTimeout(() => closeKbd(true));
+    if (el.id === 'kCancel') return setTimeout(() => closeKbd(false));
+    if (el.id === 'stNext') return setTimeout(() => setupGo(1));
+    if (el.id === 'stBack') return setTimeout(() => setupGo(-1));
+    if (el.id === 'stSkip') return setTimeout(() => closeSetup(false));
+    if (el.id === 'jumpBtn') return setTimeout(openJump);
+    if (el.id === 'helpBtn') return showHints(9000);
+    if (el.id === 'rPlay') return togglePlay();
+    if (d.tab != null) return setTimeout(() => switchSection(+d.tab, true));
+    if (d.scan != null) return setTimeout(openSearch);
+    if (d.slot != null) return toast('job', 'Free spot', 'Pin an app here', 'Hold OK on any app and pick Pin to favorites.');
+    if (d.live != null) return switchPort(PORTS.find(p => p.id === d.port));
+    if (d.port) return switchPort(PORTS.find(p => p.id === d.port));
+    if (d.sys === 'live') return goLive();
+    if (d.sys === 'net') return NATIVE ? NATIVE.openSettings('network') : toast('area', 'Network', 'Connected', 'Wi-Fi 6, 5 GHz, 412 Mbps down.');
+    if (d.sys === 'set') return setTimeout(openJump);
+  });
+  function drawSetupKeep(id) { drawSetup(); cur = null; TV.focus(setup.querySelector(`[data-nl="${id}"]`)); }
+
+  /* =====================================================================
+     Clock, standby, boot, first run
+     ===================================================================== */
+  function tick() {
+    const d = new Date(), h = d.getHours();
+    const hm = `${h % 12 || 12}:${two(d.getMinutes())}`, ap = h < 12 ? 'am' : 'pm';
+    const date = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    $('clkHM').textContent = hm; $('clkS').textContent = ':' + two(d.getSeconds()); $('clkAP').textContent = ap;
+    $('clkDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    if (d.getSeconds() % 30 === 0) drawWx();
+    $('sbHM').textContent = hm; $('sbAP').textContent = ap; $('sbDate').textContent = date;
+  }
+  tick(); setInterval(tick, 1000);
+
+  const standby = $('standby'), sbPos = $('sbPos');
+  const AWAY_MIN = [1, 3, 5, 10];
+  let IDLE = 60000 * (AWAY_MIN[store.get('away', 2)] ?? 5);
+  let idleTimer, sleeping = false, driftTimer;
+  const spot = () => { sbPos.style.transform = `translate(${80 + Math.random() * 1000}px, ${80 + Math.random() * 560}px)`; };
+  function drift() { if (reduce) return spot(); sbPos.classList.add('fade'); setTimeout(() => { spot(); sbPos.classList.remove('fade'); }, 650); }
+  function sleep() {
+    if (sleeping || setupOpen) return;
+    if (moving) endMove(false);
+    endCall(false); closeOpts(); closeJump(); closeInfo(); closeSearch(); endLink();
+    document.querySelectorAll('.hd-toast').forEach(t => t.remove());
+    sleeping = true; spot(); standby.classList.add('on');
+    driftTimer = setInterval(drift, 20000);
+  }
+  function wake() { sleeping = false; clearInterval(driftTimer); standby.classList.remove('on'); showHints(); }
+  const poke = () => { clearTimeout(idleTimer); idleTimer = setTimeout(sleep, IDLE); };
+  poke();
+
+  const bootEl = $('boot');
+  let booting = true;
+  const finishBoot = () => {
+    if (!booting) return; booting = false; bootEl.classList.add('done');
+    if (!store.get('setup-done', false) && !/[?&]nosetup\b/.test(location.search)) openSetup(); else showHints();
+    setTimeout(frameCheck, 600);
+    wxFetch();                                                  // only does anything when Weather is switched on
+  };
+  [['Power', 'ON'], ['Apps', String(APPS.length)], ['Inputs', `${PORTS.length} HDMI`], ['Recent apps', '5'], ['Home', 'READY']].forEach(([k, v], i) =>
+    setTimeout(() => $('bootLog').insertAdjacentHTML('beforeend', `<div class="hd-log__line"><span>//${k.toUpperCase().replace(/ /g, '_')}</span><span>${v}</span></div>`), reduce ? 0 : 180 + i * 170));
+  setTimeout(() => HD.glitch($('bootTitle')), 120);
+  setTimeout(finishBoot, reduce ? 700 : 1500);
+
+  /* =====================================================================
+     Keys (capture phase, ahead of tv.js). The remote only needs arrows, OK and Back;
+     a keyboard also gets a few shortcuts (Q / E sections, J Jump To, L Lite, S standby, A input demo).
+     ===================================================================== */
+  let holdTimer = null, held = false, escTimer = null, swallowOk = false;
+  addEventListener('keydown', e => {
+    poke();
+    const stop = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const back = k === 'Escape' || k === 'Backspace';
+    if (booting) { stop(); return finishBoot(); }
+    if (sleeping) { stop(); return wake(); }
+    if (inputLink) { stop(); return endLink(); }
+    if (launchEl.classList.contains('on')) return;
+    if (k === 'Enter' && swallowOk) { stop(); return; }
+    if (moving) {
+      stop();
+      if (e.repeat && k === 'Enter') return;
+      if (k === 'ArrowLeft' || k === 'ArrowRight') slideTo([...moving.box.children].indexOf(moving.el) + (k === 'ArrowLeft' ? -1 : 1));
+      else if (k === 'ArrowUp' || k === 'ArrowDown') slideLine(k === 'ArrowUp' ? -1 : 1);
+      else if (k === 'Enter') endMove(true);
+      else if (back) endMove(false);
+      return;
+    }
+    if (kbdOpen) {
+      if (k === 'Escape') { stop(); return closeKbd(false); }
+      if (k === 'Backspace') { stop(); return kType('DEL'); }
+      if (e.key.length === 1 && /^[a-zA-Z0-9 +&'.-]$/.test(e.key) && !e.ctrlKey && !e.metaKey) { stop(); return kType(e.key, true); }
+      const kf = [$('kCancel'), $('kDone')];
+      if ((k === 'ArrowLeft' || k === 'ArrowRight') && kf.includes(cur)) { stop(); return TV.focus(k === 'ArrowLeft' ? kf[0] : kf[1]); }
+      if (k === 'ArrowDown' && nothingBelow($('kKeys'), cur)) { stop(); return TV.focus($('kDone')); }
+      return;
+    }
+    if (setupOpen) {
+      if (back) { stop(); return closeSetup(false); }
+      if ((k === 'ArrowLeft' || k === 'ArrowRight') && cur?.dataset.ex) { stop(); return exStep(cur.dataset.ex, k === 'ArrowLeft' ? -1 : 1); }
+      if ((k === 'ArrowLeft' || k === 'ArrowRight') && cur?.dataset.nl) { stop(); stepName(PORTS.find(p => p.id === cur.dataset.nl), k === 'ArrowLeft' ? -1 : 1); return drawSetupKeep(cur.dataset.nl); }
+      // the bottom buttons are one row (Skip, Back, Next / Done); Down from the last line lands on Next / Done
+      const foot = [...setup.querySelectorAll('.setup__foot .hd-btn[data-f]')];
+      if ((k === 'ArrowLeft' || k === 'ArrowRight') && foot.includes(cur)) { stop(); const n = foot[foot.indexOf(cur) + (k === 'ArrowRight' ? 1 : -1)]; if (n) TV.focus(n); return; }
+      if (k === 'ArrowDown' && cur?.closest('#stBody') && nothingBelow($('stBody'), cur)) { stop(); return TV.focus($('stNext')); }
+      return;
+    }
+    if (searchOpen) {
+      if (k === 'Escape') { stop(); return closeSearch(); }
+      if (k === 'Backspace') { stop(); return typeKey('DEL'); }
+      if (/^[a-z0-9 ]$/.test(k) && !e.ctrlKey && !e.metaKey) { stop(); return typeKey(k.toUpperCase()); }
+      return;
+    }
+    if (infoOpen) { if (back) { stop(); closeInfo(); } else if (k.startsWith('Arrow')) stop(); return; }
+    if (callOpen) {
+      if (k === 'ArrowLeft' || k === 'ArrowRight') { stop(); TV.focus(cur === callGo ? callNo : callGo); }
+      else if (back) { stop(); endCall(false); }
+      else if (k.startsWith('Arrow')) stop();
+      return;
+    }
+    if (extrasOpen) {
+      const items = [...exList.querySelectorAll('[data-f]')], i = items.indexOf(cur);
+      if (k === 'ArrowUp' || k === 'ArrowDown') { stop(); cur = null; TV.focus(items[(i + (k === 'ArrowUp' ? -1 : 1) + items.length) % items.length]); }
+      else if ((k === 'ArrowLeft' || k === 'ArrowRight') && items[i]) { stop(); exStep(items[i].dataset.ex, k === 'ArrowLeft' ? -1 : 1); }
+      else if (back) { stop(); closeExtras(); }
+      else if (k === 'Enter' && e.repeat) stop();
+      return;
+    }
+    if (jumpOpen) {
+      const items = [...jList.querySelectorAll('.jl')], i = items.indexOf(cur);
+      if (k === 'ArrowUp' || k === 'ArrowDown') { stop(); cur = null; TV.focus(items[(i + (k === 'ArrowUp' ? -1 : 1) + items.length) % items.length]); }
+      else if (k === 'ArrowLeft' || k === 'ArrowRight') { stop(); if (i >= 0 && items[i].dataset.jl) stepJump(items[i].dataset.jl, k === 'ArrowLeft' ? -1 : 1); }
+      else if (back || k === 'j' || k === '*') { stop(); if (!e.repeat) closeJump(); }
+      else if (k === 'Enter' && e.repeat) stop();
+      return;
+    }
+    if (optsOpen) {
+      const items = [...oList.querySelectorAll('[data-f]')], i = items.indexOf(cur);
+      if (k === 'ArrowUp' || k === 'ArrowDown') { stop(); $('oWhy').textContent = ''; cur = null; TV.focus(items[(i + (k === 'ArrowUp' ? -1 : 1) + items.length) % items.length]); }
+      else if ((k === 'ArrowLeft' || k === 'ArrowRight') && ['rename', 'arc'].includes(items[i]?.dataset.opt)) { stop(); runOpt(items[i], k === 'ArrowLeft' ? -1 : 1, false); }
+      else if (back || k === 'o') { stop(); closeOpts(); }
+      else if (k === 'Enter' && e.repeat) stop();
+      else if (k.startsWith('Arrow')) stop();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((k === 'ArrowRight' || k === 'ArrowLeft') && edgeMove(k === 'ArrowRight' ? 1 : -1)) return stop();
+    if ((k === 'ArrowDown' || k === 'ArrowUp') && vertMove(k === 'ArrowDown' ? 1 : -1)) return stop();
+    if (k === 'Enter' && (cur?.dataset.app != null || cur?.dataset.port)) {
+      stop();
+      if (!e.repeat && !holdTimer) { held = false; holdTimer = setTimeout(() => { held = true; holdTimer = null; swallowOk = true; openOpts(); }, 480); }
+      return;
+    }
+    if (back) { stop(); if (!e.repeat && !escTimer) escTimer = setTimeout(() => { escTimer = null; openJump(); }, 480); return; }
+    if (k === 'q' || k === 'e') { stop(); switchSection(sec + (k === 'q' ? -1 : 1), true); }
+    else if (k === 'j' || k === '*' || k === 'ContextMenu') { stop(); openJump(); }
+    else if (k === 'h') { stop(); setHack(!isHack()); }
+    else if (k === 'l') { stop(); setLite(!isLite()); }
+    else if (k === 'a') { stop(); incoming(); }
+    else if (k === 's') { stop(); sleep(); }
+    else if (k === 'o') { stop(); openOpts(); }
+    else if (k === 'p') { stop(); togglePlay(); }
+    else if (k === '/') { stop(); openSearch(); }
+  }, true);
+  addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      swallowOk = false;
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; if (!held && cur && (cur.dataset.app != null || cur.dataset.port)) cur.click(); }
+      held = false;
+    }
+    if ((e.key === 'Escape' || e.key === 'Backspace') && escTimer) { clearTimeout(escTimer); escTimer = null; backUp(); }
+  }, true);
+  // a short Back climbs toward the top: from deep in a section to its first line, from there to the section's tab,
+  // and from another section's tab to Home
+  function backUp() {
+    if (!cur) return;
+    if (cur.dataset.tab != null) { if (+cur.dataset.tab !== 0) TV.focus(tabs[0]); return; }
+    if (!cur.closest('.section:not(.is-off)')) return;
+    const L = lines(sec);
+    if (!L.length) return;
+    if (L[0].includes(cur)) TV.focus(tabs[sec]);
+    else TV.focus(L[0][0]);
+  }
+  addEventListener('mousemove', () => { poke(); if (sleeping) wake(); }, true);
+  stage.addEventListener('contextmenu', e => { const t = e.target.closest('[data-f]'); if (t && (t.dataset.app != null || t.dataset.port)) { e.preventDefault(); TV.focus(t); openOpts(); } });
+  stage.addEventListener('click', e => {
+    if (booting) { e.stopImmediatePropagation(); finishBoot(); }
+    else if (inputLink) { e.stopImmediatePropagation(); endLink(); }
+    else if (optsOpen && !e.target.closest('.opts')) { e.stopImmediatePropagation(); closeOpts(); }
+    else if (jumpOpen && !e.target.closest('.jump')) { e.stopImmediatePropagation(); closeJump(); }
+  }, true);
+  // a port tile's OK goes through tv.js as a click; tv.js only launches data-app tiles, so ports are handled in tv:select above
+
+  if (NATIVE) {
+    NATIVE.on('resume', () => { TV.back(); endLink(); });
+    NATIVE.on('home', () => { TV.back(); endLink(); });
+    NATIVE.on('inputs', list => {
+      let fresh = null;
+      list.forEach(q => {
+        const p = PORTS.find(x => x.id === q.id);
+        if (!p) return;
+        if (q.connected && !p.signal && !p.arc) fresh = p;
+        p.signal = !!q.connected; p.cec = q.cec || null; p.emblem = portArt(p.cec);
+        if (q.connected && !p.t) p.t = Date.now();
+      });
+      const prev = cur; renderInputs(); renderLive(); arm(); refocus(prev);
+      if (fresh && !sleeping && !booting) incoming(fresh);
+    });
+  }
+  TV.start();
+  TV.focus(stage.querySelector('#fav [data-f]'));
+</script>
+</body>
+</html>

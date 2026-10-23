@@ -1,0 +1,85 @@
+/* Home Deck on a real TV: the same look, drawn the way a TV's small graphics chip copes with.
+   Loaded after the page's own styles, so these rules win where they overlap. */
+
+/* Motion: fast out of the gate, then a long gentle stop (a decelerating curve), and a little shorter. */
+:root {
+  --hd-ease-out: cubic-bezier(.2, 0, 0, 1);
+  --hd-ease-snap: cubic-bezier(.2, 0, 0, 1);
+  --hd-t-base: 200ms;
+  --hd-t-slow: 320ms;
+}
+
+/* The backdrop sheets that never change (ground, shading, tint, edge rails) sit under everything, so the TV draws
+   them once and keeps them. Before, the shading sat over the art and every move redrew it full screen. */
+.ground, .bg-shade, .tint, .hd-edge-rails { z-index: -1; }
+/* The art crossfades on its own layers. It no longer has the shading over it, so it is dimmed to match. */
+.bg { will-change: opacity; }
+.bg.on { opacity: .42; }
+/* The glow changes color at once (fading a color redraws the whole glow every frame); the art's crossfade covers it. */
+.bg-glow { transition: none; opacity: .17; }
+/* Plain blending looks the same for these dark lines and costs far less than multiply over the whole screen. */
+:root[data-hd-crt="on"] body::after { mix-blend-mode: normal; }
+/* The Apps list is drawn once and then only slid up and down. */
+.apps-scroll { will-change: transform; }
+
+/* The scan line crosses the hero by moving, not by changing its position in the layout. */
+.hero.hd-sweep::after { top: -4px; }
+.hero.hd-sweep.is-sweeping::after { animation-name: tv-sweep; }
+@keyframes tv-sweep { 0% { transform: translateY(0); opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(294px); opacity: 0; } }
+
+/* The radio's level meter scales its bars instead of changing their height, so it never re-lays out the page. */
+.radio__meter i { height: 100%; transform: scaleY(var(--s, .2)); transform-origin: 50% 100%; transition: transform 380ms var(--hd-ease-out); }
+.radio.is-paused .radio__meter i { height: 100% !important; transform: scaleY(.08); }
+
+/* Bigger tiles in Apps, easier to read from the sofa. Nine to a line; a longer group wraps onto a second line. */
+.tiles--apps .art--sm, .tiles--apps .badge--sm { width: 168px; height: 168px; }
+.tiles--apps .badge--sm { font-size: 16.8px; }
+.tiles--apps { gap: 16px; row-gap: 20px; }
+
+/* The music bar's lines clip at their own edge. A line too long to fit scrolls (marquee.js) between soft
+   edges; in Lite mode or with reduced motion it ends in an ellipsis instead. */
+.radio__station, .radio__track { overflow: hidden; min-width: 0; }
+.mq-box { white-space: nowrap; text-overflow: ellipsis; }
+.mq-box .mq { display: inline; }
+.mq-box.is-mq { text-overflow: clip;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14px, #000 calc(100% - 14px), transparent); }
+.mq-box.is-mq .mq { display: inline-block; padding-left: 6px; will-change: transform; }
+
+/* The music bar's big readout is the track's time (elapsed, then the length smaller); it rests dimmer while paused.
+   The small time it replaces is no longer needed. */
+.radio__freq { white-space: nowrap; transition: opacity var(--hd-t-base) var(--hd-ease-out); }
+.radio__total { font-size: .5em; color: var(--hd-act-dim); letter-spacing: .04em; }
+.radio.is-paused .radio__freq { opacity: .5; }
+.radio .radio__time { display: none; }
+
+/* Move: the app being moved lifts above its row in the kit's action yellow, with arrows either side; the rest of
+   the row steps back a little. */
+.has-moving > :not(.is-moving) { opacity: .5; transition: opacity 200ms var(--hd-ease-out); }
+.art.is-moving, .badge.is-moving { z-index: 5; transform: translateY(-14px) scale(1.1); }
+.is-moving > .hd-brackets__layer { opacity: 1; inset: -12px; --hd-bracket-c: var(--hd-c-yellow); }
+.art.is-moving img { opacity: 1; filter: drop-shadow(0 0 12px rgba(255, 215, 64, .55)); }
+html.lite .art.is-moving img { filter: none; }
+.mv-arrows { position: absolute; left: -34px; right: -34px; top: 50%; display: flex; justify-content: space-between;
+  transform: translateY(-50%); pointer-events: none; color: var(--hd-c-yellow); font: 600 22px/1 var(--hd-font-ui); }
+.mv-arrows b { display: grid; place-items: center; width: 26px; height: 34px; border: 1.5px solid currentColor; background: rgba(7, 9, 15, .85); }
+
+/* Jump back in: a long "Playing // title" line ends in an ellipsis inside its own card. */
+.cw__sub, .cw__left { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A badge's icon fits inside its own box, so it never runs under the caption; the caption keeps a dark backing so it
+   reads over light icons too. */
+.badge__emblem img { width: 100%; height: 100%; object-fit: contain; }
+.badge__cap { background: rgba(11, 12, 18, .82); }
+
+/* A free spot in Favorites: the same box, brackets and lift as an app tile, its frame inset like the tile art's. */
+.slot { position: relative; flex: none; width: 196px; height: 196px; transition: transform var(--hd-t-fast) var(--hd-ease-snap); }
+.slot .hd-brackets__layer { inset: -6px; }
+.slot.is-focus { transform: translateY(-8px) scale(1.05); }
+.slot__frame { position: absolute; inset: 13px; display: grid; place-items: center; align-content: center; gap: 10px;
+  --cut: var(--hd-cut-m); --bw: 1.5px; --line: rgba(var(--hd-chrome-rgb), .3); --fill: rgba(12, 12, 22, .62); }
+.slot .scan__name { font-size: 44px; line-height: 1; }
+.slot.is-focus .slot__frame { --line: var(--hd-focus); --fill: var(--hd-surface); }
+
+/* The music bar without an album: the source label names the app, and the title line sits alone. */
+.radio.no-station .radio__station { display: none; }

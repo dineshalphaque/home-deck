@@ -1,0 +1,400 @@
+/* Home Deck interface kit: tokens (colors, type, spacing, motion). Fonts: fonts/, SIL Open Font License. */
+@font-face {
+  font-family: "Saira";
+  src: url(fonts/saira-variable-latin.woff2) format("woff2");
+  font-weight: 100 900;
+  font-stretch: 50% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url(fonts/rajdhani-400-latin.woff2) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url(fonts/rajdhani-500-latin.woff2) format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url(fonts/rajdhani-600-latin.woff2) format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rajdhani";
+  src: url(fonts/rajdhani-700-latin.woff2) format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Michroma";
+  src: url(fonts/michroma-400-latin.woff2) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Share Tech Mono";
+  src: url(fonts/share-tech-mono-400-latin.woff2) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --hd-c-void: #05070d;
+  --hd-c-base: #07090f;
+  --hd-c-haze: #38151b;
+  --hd-c-haze-2: #2f1017;
+  --hd-c-dusk: #18121f;
+  --hd-c-night: #110a13;
+  --hd-c-hub: #0a0f14;
+  --hd-c-scrim: rgba(40, 6, 4, .6);
+  --hd-c-surface: #121220;
+  --hd-c-surface-2: #19111f;
+  --hd-c-row: #0f0c14;
+  --hd-c-teal-black: #111e23;
+  --hd-c-locked: #46161b;
+  --hd-c-selected: #7b2526;
+  --hd-c-red-fill: #932d2a;
+  --hd-c-red-deep: #290e12;
+  --hd-c-cyan-fill: #1e585c;
+  --hd-c-guide-head: #135143;
+  --hd-c-guide-body: #131722;
+  --hd-c-red: #ff5a52;
+  --hd-c-red-hot: #ff6058;
+  --hd-c-red-dim: #e0574f;
+  --hd-c-cyan: #5ef6ff;
+  --hd-c-cyan-soft: #4dc8d0;
+  --hd-c-cyan-dim: #56a3a2;
+  --hd-c-white: #e4fcf2;
+  --hd-c-text: #cdd5ce;
+  --hd-c-meta: #a4a3a3;
+  --hd-c-disabled: #419191;
+  --hd-c-ink-dark: #0a0b14;
+  --hd-c-pink-ink: #ffe3df;
+  --hd-c-yellow: #ffd740;
+  --hd-c-gold: #ebbc3a;
+  --hd-c-green: #1bd676;
+  --hd-c-better: #49e780;
+  --hd-c-worse: #ff4b4b;
+  --hd-c-worse-fill: #dd0b0d;
+  --hd-c-hostile: #ff3c33;
+  --hd-c-blocked-ink: #ff8a80;
+  --hd-c-info: #4a8cff;
+  --hd-c-guide: #05dfad;
+  --hd-c-banner-gray: #8f8889;
+  --hd-c-net: #ddff5e;
+  --hd-c-net-2: #cfed58;
+  --hd-c-net-ink: #c0dd60;
+  --hd-c-net-line: #7a8a38;
+  --hd-c-net-bg: #0d0b13;
+  --hd-c-net-cell: #111f1f;
+  --hd-c-net-band: #29353d;
+  --hd-tier-1: #d6d0d0;
+  --hd-tier-2: #1dec83;
+  --hd-tier-3: #389ad7;
+  --hd-tier-4: #9c2bf5;
+  --hd-tier-4-text: #b36bff;
+  --hd-tier-5: #ff9f43;
+  --hd-tier-1-text: var(--hd-tier-1);
+  --hd-tier-2-text: var(--hd-tier-2);
+  --hd-tier-3-text: var(--hd-tier-3);
+  --hd-tier-5-text: var(--hd-tier-5);
+  --hd-font-ui:
+    "Saira",
+    "Barlow Semi Condensed",
+    "Arial Narrow",
+    system-ui,
+    sans-serif;
+  --hd-font-ui-stretch: 87.5%;
+  --hd-font-display:
+    "Saira",
+    "Rajdhani",
+    "Arial Narrow",
+    system-ui,
+    sans-serif;
+  --hd-font-num:
+    "Rajdhani",
+    "Saira",
+    "Arial Narrow",
+    system-ui,
+    sans-serif;
+  --hd-font-device:
+    "Michroma",
+    "Saira",
+    "Arial",
+    sans-serif;
+  --hd-font-mono:
+    "Share Tech Mono",
+    ui-monospace,
+    "Consolas",
+    "Menlo",
+    monospace;
+  --hd-fs-giant: clamp(40px, 4.2vw, 96px);
+  --hd-fs-system: clamp(36px, 3.75vw, 88px);
+  --hd-fs-hero-num: clamp(32px, 2.9vw, 64px);
+  --hd-fs-title: clamp(22px, 1.875vw, 40px);
+  --hd-fs-hud-num: clamp(20px, 1.75vw, 36px);
+  --hd-fs-h2: clamp(18px, 1.5vw, 32px);
+  --hd-fs-sub: clamp(17px, 1.35vw, 28px);
+  --hd-fs-h3: clamp(16px, 1.25vw, 26px);
+  --hd-fs-body: clamp(16px, 1.1vw, 22px);
+  --hd-fs-row: clamp(15px, 1.02vw, 21px);
+  --hd-fs-small: clamp(14px, .94vw, 19px);
+  --hd-fs-tab: clamp(13px, .9vw, 18px);
+  --hd-fs-micro: clamp(12px, .75vw, 15px);
+  --hd-fs-filler: clamp(9px, .52vw, 11px);
+  --hd-lh-tight: 1;
+  --hd-lh-head: 1.15;
+  --hd-lh-ui: 1.25;
+  --hd-lh-body: 1.5;
+  --hd-tr-none: 0;
+  --hd-tr-head: .03em;
+  --hd-tr-title: .04em;
+  --hd-tr-btn: .05em;
+  --hd-tr-label: .1em;
+  --hd-tr-device: .15em;
+  --hd-tr-filler: .06em;
+  --hd-fw-body: 400;
+  --hd-fw-ui: 500;
+  --hd-fw-strong: 600;
+  --hd-fw-heavy: 700;
+  --hd-measure: 64ch;
+  --hd-u: clamp(3px, .104vw + 2px, 6px);
+  --hd-s-1: var(--hd-u);
+  --hd-s-2: calc(var(--hd-u) * 2);
+  --hd-s-3: calc(var(--hd-u) * 3);
+  --hd-s-4: calc(var(--hd-u) * 4);
+  --hd-s-5: calc(var(--hd-u) * 5);
+  --hd-s-6: calc(var(--hd-u) * 6);
+  --hd-s-8: calc(var(--hd-u) * 8);
+  --hd-s-12: calc(var(--hd-u) * 12);
+  --hd-s-14: calc(var(--hd-u) * 14);
+  --hd-s-20: calc(var(--hd-u) * 20);
+  --hd-safe-x: max(16px, 2.65vw);
+  --hd-safe-y: max(16px, 4vh);
+  --hd-control-h: max(40px, calc(var(--hd-u) * 10));
+  --hd-row-pitch: max(44px, calc(var(--hd-u) * 12));
+  --hd-bw-hair: 1px;
+  --hd-bw: 2px;
+  --hd-bw-heavy: 3px;
+  --hd-bar: max(8px, calc(var(--hd-u) * 3));
+  --hd-strip: max(4px, calc(var(--hd-u) * 1.5));
+  --hd-rail: max(8px, calc(var(--hd-u) * 5));
+  --hd-rail-gap: 2px;
+  --hd-shoulder: max(3px, var(--hd-u));
+  --hd-cut-xs: max(5px, calc(var(--hd-u) * 1.5));
+  --hd-cut-s: max(7px, calc(var(--hd-u) * 2.5));
+  --hd-cut-m: max(12px, calc(var(--hd-u) * 5));
+  --hd-cut-l: max(20px, calc(var(--hd-u) * 10));
+  --hd-a-ghost: .08;
+  --hd-a-faint: .15;
+  --hd-a-echo: .35;
+  --hd-a-scrim: .6;
+  --hd-a-plate: .82;
+  --hd-a-full: 1;
+  --hd-t-instant: 80ms;
+  --hd-t-fast: 150ms;
+  --hd-t-base: 240ms;
+  --hd-t-slow: 420ms;
+  --hd-t-sweep: 900ms;
+  --hd-t-glitch: 240ms;
+  --hd-t-toast: 5000ms;
+  --hd-ease-out: cubic-bezier(.2, .8, .2, 1);
+  --hd-ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --hd-ease-snap: cubic-bezier(.7, 0, .2, 1);
+  --hd-z-base: 0;
+  --hd-z-raised: 10;
+  --hd-z-float: 50;
+  --hd-z-sticky: 100;
+  --hd-z-overlay: 500;
+  --hd-z-modal: 1000;
+  --hd-z-toast: 1100;
+  --hd-z-crt: 2000;
+  --hd-perspective: 1200px;
+  --hd-tilt: 11deg;
+}
+:root,
+[data-hd-mode=normal] {
+  --hd-ground: var(--hd-c-base);
+  --hd-ground-top: var(--hd-c-haze);
+  --hd-ground-image:
+    linear-gradient(
+      180deg,
+      var(--hd-c-haze) 0%,
+      var(--hd-c-haze-2) 10%,
+      var(--hd-c-dusk) 17%,
+      var(--hd-c-night) 40%,
+      var(--hd-c-base) 55%,
+      #06090e 100%);
+  --hd-surface: var(--hd-c-surface);
+  --hd-surface-2: var(--hd-c-surface-2);
+  --hd-row: var(--hd-c-row);
+  --hd-plate: rgba(18, 18, 32, var(--hd-a-plate));
+  --hd-chrome: var(--hd-c-red);
+  --hd-chrome-hot: var(--hd-c-red-hot);
+  --hd-chrome-dim: var(--hd-c-red-dim);
+  --hd-chrome-fill: var(--hd-c-red-fill);
+  --hd-chrome-deep: var(--hd-c-red-deep);
+  --hd-chrome-rgb:
+    255,
+    90,
+    82;
+  --hd-act: var(--hd-c-cyan);
+  --hd-act-soft: var(--hd-c-cyan-soft);
+  --hd-act-dim: var(--hd-c-cyan-dim);
+  --hd-act-fill: var(--hd-c-cyan-fill);
+  --hd-on-act: var(--hd-c-ink-dark);
+  --hd-act-rgb:
+    94,
+    246,
+    255;
+  --hd-select-bg: var(--hd-c-selected);
+  --hd-select-ink: #ffffff;
+  --hd-focus: var(--hd-c-cyan);
+  --hd-text: var(--hd-c-text);
+  --hd-text-strong: var(--hd-c-white);
+  --hd-text-meta: var(--hd-c-meta);
+  --hd-text-disabled: var(--hd-c-disabled);
+  --hd-signal: var(--hd-c-yellow);
+  --hd-on-signal: var(--hd-c-ink-dark);
+  --hd-good: var(--hd-c-green);
+  --hd-bad: var(--hd-c-worse);
+  --hd-glow-strength: 1;
+}
+[data-hd-mode=alert] {
+  --hd-ground: #0b0508;
+  --hd-ground-top: #4c1117;
+  --hd-ground-image:
+    linear-gradient(
+      180deg,
+      #4c1117 0%,
+      #3a0d14 12%,
+      #220a10 24%,
+      #14070b 45%,
+      #0b0508 65%,
+      #090406 100%);
+  --hd-surface: #170c12;
+  --hd-surface-2: #1f0d13;
+  --hd-row: #140a0f;
+  --hd-plate: rgba(28, 10, 14, var(--hd-a-plate));
+  --hd-chrome: var(--hd-c-hostile);
+  --hd-chrome-hot: #ff5146;
+  --hd-chrome-dim: #f0554c;
+  --hd-chrome-fill: #a3221f;
+  --hd-chrome-deep: #2e0b0e;
+  --hd-chrome-rgb:
+    255,
+    60,
+    51;
+  --hd-act: #ffb3ab;
+  --hd-act-soft: #ff9d94;
+  --hd-act-dim: #e88a82;
+  --hd-act-fill: #5c1a1c;
+  --hd-on-act: #1a0507;
+  --hd-act-rgb:
+    255,
+    179,
+    171;
+  --hd-select-bg: #a3221f;
+  --hd-select-ink: #ffffff;
+  --hd-focus: var(--hd-c-yellow);
+  --hd-text: #f0d4d0;
+  --hd-text-strong: #fff1ee;
+  --hd-text-meta: #c0a09c;
+  --hd-text-disabled: #b0716c;
+  --hd-glow-strength: 1.8;
+}
+[data-hd-mode=hack] {
+  --hd-ground: var(--hd-c-net-bg);
+  --hd-ground-top: #1a1f12;
+  --hd-ground-image:
+    linear-gradient(
+      180deg,
+      #1c2113 0%,
+      #151912 12%,
+      #10131a 30%,
+      var(--hd-c-net-bg) 55%,
+      #0a0a10 100%);
+  --hd-surface: var(--hd-c-net-cell);
+  --hd-surface-2: #142424;
+  --hd-row: #0f1919;
+  --hd-plate: rgba(17, 31, 31, var(--hd-a-plate));
+  --hd-chrome: var(--hd-c-net-ink);
+  --hd-chrome-hot: var(--hd-c-net);
+  --hd-chrome-dim: #a9c25a;
+  --hd-chrome-fill: #4b5a20;
+  --hd-chrome-deep: #1b2111;
+  --hd-chrome-rgb:
+    192,
+    221,
+    96;
+  --hd-act: var(--hd-c-cyan);
+  --hd-act-soft: var(--hd-c-cyan-soft);
+  --hd-act-dim: var(--hd-c-cyan-dim);
+  --hd-act-fill: var(--hd-c-cyan-fill);
+  --hd-on-act: var(--hd-c-ink-dark);
+  --hd-act-rgb:
+    94,
+    246,
+    255;
+  --hd-select-bg: var(--hd-c-net-band);
+  --hd-select-ink: var(--hd-c-net);
+  --hd-focus: var(--hd-c-cyan);
+  --hd-text: #d6e2c8;
+  --hd-text-strong: #f2ffd8;
+  --hd-text-meta: #9fae8f;
+  --hd-text-disabled: #779372;
+  --hd-glow-strength: 1;
+}
+:root,
+[data-hd-mode] {
+  --hd-line: rgba(var(--hd-chrome-rgb), .9);
+  --hd-line-soft: rgba(var(--hd-chrome-rgb), .45);
+  --hd-hairline: rgba(var(--hd-chrome-rgb), .28);
+  --hd-faint: rgba(var(--hd-chrome-rgb), .13);
+  --hd-ghost: rgba(var(--hd-chrome-rgb), .08);
+  --hd-act-line: rgba(var(--hd-act-rgb), .9);
+  --hd-act-faint: rgba(var(--hd-act-rgb), .14);
+  --hd-act-ghost: rgba(var(--hd-act-rgb), .07);
+  --hd-glow-line: 0 0 calc(6px * var(--hd-glow-strength)) rgba(var(--hd-chrome-rgb), .45), 0 0 calc(18px * var(--hd-glow-strength)) rgba(var(--hd-chrome-rgb), .18);
+  --hd-glow-text: 0 0 calc(8px * var(--hd-glow-strength)) rgba(var(--hd-chrome-rgb), .38), 0 0 calc(22px * var(--hd-glow-strength)) rgba(var(--hd-chrome-rgb), .16);
+  --hd-glow-signal: 0 0 7px rgba(255, 215, 64, .45);
+  --hd-glow-act: 0 0 4px rgba(var(--hd-act-rgb), .35);
+  --hd-glow-drop: drop-shadow(0 0 calc(5px * var(--hd-glow-strength)) rgba(var(--hd-chrome-rgb), .5));
+  --hd-glow-drop-act: drop-shadow(0 0 4px rgba(var(--hd-act-rgb), .4));
+  --hd-haze-top:
+    radial-gradient(
+      120% 70px at 50% 0,
+      rgba(var(--hd-chrome-rgb), .12),
+      transparent);
+  --hd-hatch:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(var(--hd-chrome-rgb), .22) 0 1px,
+      transparent 1px 4px);
+  --hd-hatch-caution:
+    repeating-linear-gradient(
+      -45deg,
+      var(--hd-signal) 0 3px,
+      transparent 3px 7px);
+  --hd-hatch-block:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(var(--hd-chrome-rgb), .35) 0 2px,
+      transparent 2px 6px);
+  --hd-scanline:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, .18) 0 1px,
+      transparent 1px 4px);
+}

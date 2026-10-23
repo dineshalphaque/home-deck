@@ -280,6 +280,9 @@ Don't want the tile art? It's in `app/src/main/assets/www/icons/`. Delete an app
 
 ## Credits
 
+- Grew out of [KIDŌ](https://github.com/glidiandev/kido), which started from
+  [cleanyourtv](https://github.com/Gathin23/cleanyourtv) by Gathin. To clear the rest of a TV's preinstalled clutter,
+  see cleanyourtv.
 - Fonts, all under the SIL Open Font License: [Michroma](https://fonts.google.com/specimen/Michroma),
   [Rajdhani](https://fonts.google.com/specimen/Rajdhani), [Saira](https://fonts.google.com/specimen/Saira) and
   [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono).

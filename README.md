@@ -8,6 +8,8 @@ No ads, no rows of recommendations, and it works offline.
 
 A 45-second tour of the favorites, Apps, moving an app, Inputs and Jump To: [watch the video](docs/home-deck-demo.mp4).
 
+**Try it in your browser:** [glidian.dev/home-deck/demo](https://glidian.dev/home-deck/demo/) (arrow keys and Enter are the remote).
+
 ![Home Deck's home screen on a TV](docs/home.png)
 
 **Android TV 8.0+ · offline by default · free and open source (MIT)**
@@ -43,6 +45,10 @@ A 45-second tour of the favorites, Apps, moving an app, Inputs and Jump To: [wat
 Popular apps (Netflix, Prime Video, HBO Max, Disney+, YouTube, Hulu, Peacock, Crunchyroll, Spotify, Apple TV,
 Paramount+, Plex, Pluto TV, Tubi, Twitch, Sling, YouTube TV, ESPN, Kodi, Jellyfin, VLC and more) get their own
 tile art. Anything else gets a badge made from its own icon, framed in the icon's main color.
+
+![Sixteen of Home Deck's app tiles: Netflix, YouTube, Prime Video, Disney+, HBO Max, Hulu, Spotify, Crunchyroll, Plex, Twitch, Steam Link, Apple TV, Peacock, Tubi, Kodi and GeForce NOW](docs/tiles.png)
+
+All 43 tiles are on [glidian.dev/home-deck](https://glidian.dev/home-deck/).
 
 The manuals, updaters, store demos and setup apps that come with a lot of TVs are left out. They're still installed;
 Home Deck just doesn't show them.

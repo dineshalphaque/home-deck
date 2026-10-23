@@ -24,7 +24,7 @@
     --oct: polygon(9% 0, 91% 0, 100% 9%, 100% 91%, 91% 100%, 9% 100%, 0 91%, 0 9%);
   }
   /* the viewer's accent color re-keys the live ink everywhere (Normal mode only) */
-  html:not([data-hd-mode="alert"]):not([data-hd-mode="hack"]) .stage {
+  html:not([data-hd-mode="alert"]):not([data-hd-mode="lime"]) .stage {
     --hd-act: var(--acc); --hd-act-rgb: var(--acc-rgb); --hd-act-soft: var(--acc); --hd-act-dim: var(--acc-dim);
     --hd-focus: var(--acc);
     --hd-act-line: rgba(var(--acc-rgb), .9); --hd-act-faint: rgba(var(--acc-rgb), .14); --hd-act-ghost: rgba(var(--acc-rgb), .07);
@@ -57,7 +57,7 @@
                 linear-gradient(0deg, var(--hd-ground) 0%, rgba(7, 9, 15, .85) 30%, transparent 47%),
                 var(--hd-haze-top); }
   .tint { position: absolute; inset: 0; pointer-events: none; background: var(--acc); opacity: .045; }
-  [data-hd-mode="alert"] .tint, [data-hd-mode="hack"] .tint { display: none; }
+  [data-hd-mode="alert"] .tint, [data-hd-mode="lime"] .tint { display: none; }
   html.lite .bg-glow { display: none; }
   .hd-edge-rails::before { left: 22px; } .hd-edge-rails::after { right: 22px; }
 
@@ -544,7 +544,6 @@
   <div class="opts" id="opts">
     <div class="hd-panel hd-panel--spine-act">
       <div class="hd-panel__head"><span id="oTitle">Options</span><span data-hd-code data-kind="serial" data-mask="XX-00" data-seed="opts3"></span></div>
-      <div id="oCharge" data-hd-meter data-label="Charge" data-value="8" data-max="8" data-segments="8"></div>
       <div class="hd-menu" id="oList"></div>
       <div class="opts__why" id="oWhy"></div>
     </div>
@@ -1093,7 +1092,7 @@
   });
 
   /* =====================================================================
-     Toasts, hints, Lite (also automatic), the hidden Hack mode
+     Toasts, hints, Lite (also automatic), Lime mode
      ===================================================================== */
   const toast = (kind, label, title, text, timeout = 3800) => { document.querySelectorAll('.hd-toast').forEach(t => t.remove()); return HD.toast({ kind, label, title, text, timeout }); };
   let hintTimer;
@@ -1118,11 +1117,11 @@
     requestAnimationFrame(step);
     if (forced) setTimeout(() => { if (!isLite()) setLite(true, 'slow'); }, 1600);
   }
-  const isHack = () => HD.getMode() === 'hack';
-  function setHack(on) {
-    HD.setMode(on ? 'hack' : 'normal');
+  const isLime = () => HD.getMode() === 'lime';
+  function setLime(on) {
+    HD.setMode(on ? 'lime' : 'normal');
     $('brandSub').textContent = on ? 'Lime mode // lime display' : deckSub;
-    if (J.hack) J.hack.i = on ? 1 : 0;
+    if (J.lime) J.lime.i = on ? 1 : 0;
     toast('area', 'Display mode', on ? 'Lime mode on' : 'Back to normal', on ? 'Lime on teal-black.' : 'Your color again.');
   }
 
@@ -1161,7 +1160,7 @@
     acc:   { name: 'Accent color', vals: ACCENTS.map(a => a[0]), i: store.get('acc', 0) },
     away:  { name: 'Away screen', vals: ['1 min', '3 min', '5 min', '10 min'], i: [0, 1, 2, 3].includes(store.get('away', 2)) ? store.get('away', 2) : 2 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
-    hack:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
+    lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
@@ -1212,7 +1211,7 @@
     if (id === 'snd') store.set('snd', o.i);
     if (id === 'away') { store.set('away', o.i); IDLE = 60000 * AWAY_MIN[o.i]; poke(); }
     if (id === 'lite') { setLite(o.i === 1); return; }
-    if (id === 'hack') { setHack(o.i === 1); return drawJump(id); }
+    if (id === 'lime') { setLime(o.i === 1); return drawJump(id); }
     drawJump(id);
   }
   function okJump(id) {
@@ -1270,31 +1269,30 @@
   }
 
   /* ---- options (hold OK): apps and inputs ---- */
-  const opts = $('opts'), oList = $('oList'), oCharge = $('oCharge');
-  let optsOpen = false, optsFor = null, charge = 8, beforeOpts = null;
-  setInterval(() => { if (charge < 8) { charge++; HD.setMeter(oCharge, charge); if (optsOpen) drawOpts(cur?.dataset.opt); } }, 2500);
+  const opts = $('opts'), oList = $('oList');
+  let optsOpen = false, optsFor = null, beforeOpts = null;
   const BUILT_IN = ['Play Store', 'Media Player'];
   function optItems() {
     if (optsFor.port) {
       const p = PORTS.find(x => x.id === optsFor.port);
-      if (p.arc) return [{ id: 'arc', label: 'Audio out (ARC)', cost: 0, val: 'On' }, { id: 'info', label: 'Info', cost: 1 }];
-      return [{ id: 'switch', label: 'Switch', cost: 0 }, { id: 'rename', label: 'Name', cost: 0, val: nameLabel(names[p.n - 1], p.n) },
-              { id: 'arc', label: 'Audio out (ARC)', cost: 0, val: 'Off' }, { id: 'info', label: 'Info', cost: 1 }];
+      if (p.arc) return [{ id: 'arc', label: 'Audio out (ARC)', val: 'On' }, { id: 'info', label: 'Info' }];
+      return [{ id: 'switch', label: 'Switch' }, { id: 'rename', label: 'Name', val: nameLabel(names[p.n - 1], p.n) },
+              { id: 'arc', label: 'Audio out (ARC)', val: 'Off' }, { id: 'info', label: 'Info' }];
     }
     const app = optsFor.app, pinned = favs.includes(app);
     return [
-      { id: 'open', label: 'Open', cost: 0 },
-      { id: 'pin', label: pinned ? 'Unpin' : 'Pin to favorites', cost: 1, why: !pinned && !favs.includes(null) ? 'Favorites are full. Unpin one first.' : null },
-      { id: 'move', label: 'Move', cost: 1, why: beforeOpts?.closest('#fav, #apps') ? null : 'Move it in Favorites or in Apps.' },
-      { id: 'info', label: 'Info', cost: 1 },
-      { id: 'del', label: 'Uninstall', cost: 4, why: (NATIVE ? APPS[app].system : BUILT_IN.includes(APPS[app].name)) ? 'Built in. It can\'t be removed.' : null },
+      { id: 'open', label: 'Open' },
+      { id: 'pin', label: pinned ? 'Unpin' : 'Pin to favorites', why: !pinned && !favs.includes(null) ? 'Favorites are full. Unpin one first.' : null },
+      { id: 'move', label: 'Move', why: beforeOpts?.closest('#fav, #apps') ? null : 'Move it in Favorites or in Apps.' },
+      { id: 'info', label: 'Info' },
+      { id: 'del', label: 'Uninstall', why: (NATIVE ? APPS[app].system : BUILT_IN.includes(APPS[app].name)) ? 'Built in. It can\'t be removed.' : null },
     ];
   }
   function drawOpts(keepId) {
     oList.innerHTML = optItems().map(o => {
-      const why = o.why || (o.cost > charge ? 'Not enough charge. It refills in a few seconds.' : '');
+      const why = o.why || '';
       return `<div class="hd-menu__item hd-frame${why ? ' is-blocked' : ''}" data-f data-opt="${o.id}" data-why="${why}">
-        <span class="l"><span class="hd-menu__tick" aria-hidden="true"></span>${o.label}</span>${o.val ? `<span class="v"><span>&lsaquo;</span>${esc(o.val)}<span>&rsaquo;</span></span>` : `<span class="hd-key">${o.cost}</span>`}</div>`;
+        <span class="l"><span class="hd-menu__tick" aria-hidden="true"></span>${o.label}</span>${o.val ? `<span class="v"><span>&lsaquo;</span>${esc(o.val)}<span>&rsaquo;</span></span>` : ''}</div>`;
     }).join('');
     const again = keepId && oList.querySelector(`[data-opt="${keepId}"]`);
     if (again) { cur = null; TV.focus(again); }
@@ -1305,7 +1303,6 @@
     if (d.app == null && !d.port) return;
     optsFor = d.app != null ? { app: +d.app } : { port: d.port }; optsOpen = true; beforeOpts = cur;
     $('oTitle').textContent = 'Options // ' + (d.app != null ? APPS[+d.app].name : portName(PORTS.find(x => x.id === d.port)));
-    HD.setMeter(oCharge, charge);
     const sr = stage.getBoundingClientRect(), kk = sr.width / 1920, cr = cur.getBoundingClientRect();
     const x = (cr.left - sr.left) / kk, ty = (cr.top - sr.top) / kk;
     trap(opts); drawOpts();
@@ -1335,8 +1332,6 @@
   function runOpt(el, dir = 1, ok = true) {
     const id = el.dataset.opt;
     if (el.classList.contains('is-blocked')) { $('oWhy').textContent = el.dataset.why; return; }
-    const it = optItems().find(o => o.id === id);
-    charge -= it.cost; HD.setMeter(oCharge, charge);
     if (optsFor.port) {
       const p = PORTS.find(x => x.id === optsFor.port);
       if (id === 'arc') {
@@ -1977,7 +1972,7 @@
     if (back) { stop(); if (!e.repeat && !escTimer) escTimer = setTimeout(() => { escTimer = null; openJump(); }, 480); return; }
     if (k === 'q' || k === 'e') { stop(); switchSection(sec + (k === 'q' ? -1 : 1), true); }
     else if (k === 'j' || k === '*' || k === 'ContextMenu') { stop(); openJump(); }
-    else if (k === 'h') { stop(); setHack(!isHack()); }
+    else if (k === 'h') { stop(); setLime(!isLime()); }
     else if (k === 'l') { stop(); setLite(!isLite()); }
     else if (k === 'a') { stop(); incoming(); }
     else if (k === 's') { stop(); sleep(); }

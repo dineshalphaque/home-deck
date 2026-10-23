@@ -681,7 +681,7 @@
       });
     });
   }
-  var MODES = ["normal", "alert", "hack"];
+  var MODES = ["normal", "alert", "lime"];
   function setMode(mode, target) {
     if (MODES.indexOf(mode) === -1) mode = "normal";
     var el = target || html;

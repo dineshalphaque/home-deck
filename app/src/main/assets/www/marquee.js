@@ -2,8 +2,8 @@
 // holds, and starts over. Short text stays still. Only a transform moves (a Web Animation the compositor runs), so
 // a TV's graphics chip just slides it. Lite mode and reduced motion get a plain ellipsis instead.
 window.Marquee = (() => {
-  const SPEED = 42;                    // stage pixels a second
-  const HOLD = 1600;                   // milliseconds at each end
+  const SPEED = 35;                    // stage pixels a second: an easy reading pace
+  const HOLD = 2000;                   // milliseconds at each end
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const boxes = new Set();
 

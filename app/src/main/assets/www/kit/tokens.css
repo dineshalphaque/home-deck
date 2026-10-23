@@ -314,7 +314,7 @@
   --hd-text-disabled: #b0716c;
   --hd-glow-strength: 1.8;
 }
-[data-hd-mode=hack] {
+[data-hd-mode=lime] {
   --hd-ground: var(--hd-c-net-bg);
   --hd-ground-top: #1a1f12;
   --hd-ground-image:

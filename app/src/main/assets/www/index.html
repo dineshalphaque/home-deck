@@ -725,6 +725,27 @@
     ['iHeartRadio', 'iheartradio', '#C6002B', 'Radio', 'Live radio stations and podcasts.'],
     ['Downloader', 'downloader', '#F57C00', 'Tool', 'Gets files and apps onto the TV.'],
   ];
+  // tile art for apps found only on the TV (not in the browser preview): name, icon file, brand color, kind
+  const TVART = [
+    ['ADB AppControl', 'adbappcontrol', '#3AD37F', 'Tool'],
+    ['Aerial Views', 'aerialviews', '#31DF74', 'Tool'],
+    ['Core Builds', 'corebuilds', '#00C7ED', 'Tool'],
+    ['CX File Explorer', 'cxinventor', '#00CAF1', 'Tool'],
+    ['Developer Tools', 'developer-tools', '#B955E8', 'Tool'],
+    ['AIDA64', 'finalwire', '#EDA61F', 'Tool'],
+    ['NordVPN', 'nordvpn', '#417EEB', 'Tool'],
+    ['Nuvio TV', 'nuvio', '#5F77D7', 'Streaming'],
+    ['Projectivy Launcher', 'projectivy', '#00B4CB', 'Tool'],
+    ['Projectivy Blueprint', 'projectivy-blueprint', '#00D7ED', 'Tool'],
+    ['PCAPdroid', 'remote-capture', '#9964C8', 'Tool'],
+    ['Send Files to TV', 'sendfilestotv', '#2671EC', 'Tool'],
+    ['SmartTube Next', 'smarttubenext', '#ED0000', 'Video'],
+    ['TvOverlay', 'tvoverlay', '#00BE7D', 'Tool'],
+    ['TiviMate', 'tvplayer', '#8FB7EF', 'Live TV'],
+    ['TV Quick Actions', 'tvquickactions', '#B955E8', 'Tool'],
+    ['TV Bro', 'tvwebbrowser', '#58A0EA', 'Tool'],
+    ['Vimu Player', 'vimu', '#E18837', 'Player'],
+  ];
   // the Apps tab, grouped by kind so 46 apps stay calm from the sofa
   const GROUPS = [
     ['Streaming', ['Netflix', 'Prime Video', 'HBO Max', 'Disney+', 'Hulu', 'Peacock', 'Apple TV', 'Paramount+', 'Discovery+', 'Starz', 'MGM+']],
@@ -742,7 +763,8 @@
   EXTRA.forEach(([name, kind]) => APPS.push({ name, kind, file: null, plain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, glow: '#8f8889', bg: '#0b0b10', fg: '#fff' }));
   if (NATIVE) {
     const art = new Map([...LIST.map(([name, file, glow, kind]) => [name, { file, glow, kind }]),
-                         ...SET3.map(([name, file, glow, kind, line]) => [name, { file, glow, kind, line }])]);
+                         ...SET3.map(([name, file, glow, kind, line]) => [name, { file, glow, kind, line }]),
+                         ...TVART.map(([name, file, glow, kind]) => [name, { file, glow, kind }])]);
     const names = [...art.keys()];
     APPS.length = 0;
     NATIVE.apps().forEach(a => {

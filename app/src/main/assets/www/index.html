@@ -1122,6 +1122,7 @@
     HD.setMode(on ? 'lime' : 'normal');
     $('brandSub').textContent = on ? 'Lime mode // lime display' : deckSub;
     if (J.lime) J.lime.i = on ? 1 : 0;
+    store.set('lime', on ? 1 : 0);
     toast('area', 'Display mode', on ? 'Lime mode on' : 'Back to normal', on ? 'Lime on teal-black.' : 'Your color again.');
   }
 
@@ -1160,10 +1161,11 @@
     acc:   { name: 'Accent color', vals: ACCENTS.map(a => a[0]), i: store.get('acc', 0) },
     away:  { name: 'Away screen', vals: ['1 min', '3 min', '5 min', '10 min'], i: [0, 1, 2, 3].includes(store.get('away', 2)) ? store.get('away', 2) : 2 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
-    lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
+    lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: store.get('lime', 0) === 1 ? 1 : 0 },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
+  if (J.lime.i) HD.setMode('lime');   // restore the saved Lime mode quietly, no toast
   const jump = $('jump'), jList = $('jList');
   J.order = { name: 'App order', vals: ['Reset'], i: 0 };
   J.about = { name: 'About', vals: ['Home Deck'], i: 0 };

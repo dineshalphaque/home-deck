@@ -43,6 +43,7 @@ window.NATIVE = (() => {
     'dev.vodik7.tvquickactions': 'TV Quick Actions',
     'com.phlox.tvwebbrowser': 'TV Bro',
     'net.gtvbox.videoplayer': 'Vimu Player',
+    'com.realtek.airplay2': 'AirPlay', 'com.android.tv.settings': 'Settings',
   };
   const norm = s => String(s).toLowerCase().replace(/[^a-z0-9+]/g, '');
   // the tile art the app carries; an app whose art isn't there gets the badge made from its own icon

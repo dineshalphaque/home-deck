@@ -357,14 +357,12 @@
   .net { display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 3px; align-items: center; align-self: end; padding-bottom: 2px; }
   .net[hidden] { display: none; }
   .net__head { grid-column: 1 / -1; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }
-  .net__ico { grid-row: 2 / span 2; width: 48px; height: 48px; color: var(--hd-act); }
+  .net__ico { grid-column: 1 / -1; width: 48px; height: 48px; color: var(--hd-act); }   /* same rows as .wx: head, icon, cond, city */
   .net__ico svg { width: 100%; height: 100%; display: block; }
-  .net__line, .net__ip { font: 400 15px/1.2 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-  .net__line { color: var(--hd-chrome); }
-  .net__ip { color: var(--hd-text-meta); }
+  .net__line { grid-column: 1 / -1; font-size: 18px; letter-spacing: var(--hd-tr-label); text-transform: uppercase; color: var(--hd-chrome); white-space: nowrap; }
+  .net__ip { grid-column: 1 / -1; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }
   .net.is-off .net__ico { color: var(--hd-chrome-dim); opacity: .6; }
-  .net.is-off .net__ip { display: none; }
-  .net.is-off .net__line { grid-row: 2 / span 2; }
+  .net.is-off .net__ip { visibility: hidden; }
 
   /* Online extras: everything is offline until switched on */
   .extras { z-index: 300; }
@@ -842,7 +840,7 @@
     $('netLine').textContent = off ? 'Offline'
       : n.type === 'wifi' ? [n.mhz ? `${n.mhz > 4900 ? '5' : '2.4'} GHz` : '', n.mbps > 0 ? `${n.mbps} Mbps` : ''].filter(Boolean).join(' // ') || 'Wi-Fi'
       : n.type === 'ethernet' ? (n.mbps > 0 ? `${n.mbps} Mbps` : 'Ethernet') : 'Online';
-    $('netIp').textContent = off ? '' : n.ip || '';
+    $('netIp').textContent = off ? '\u00a0' : n.ip || '\u00a0';   // keep the row so the lines stay level with the weather
     $('topNet').hidden = false;
   }
   function applyNet(n) {

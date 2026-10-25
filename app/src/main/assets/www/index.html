@@ -1120,7 +1120,6 @@
   const isLime = () => HD.getMode() === 'lime';
   function setLime(on) {
     HD.setMode(on ? 'lime' : 'normal');
-    $('brandSub').textContent = on ? 'Lime mode // lime display' : deckSub;
     if (J.lime) J.lime.i = on ? 1 : 0;
     toast('area', 'Display mode', on ? 'Lime mode on' : 'Back to normal', on ? 'Lime on teal-black.' : 'Your color again.');
   }

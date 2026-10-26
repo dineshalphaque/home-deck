@@ -1159,6 +1159,7 @@
     row2:  { name: 'Row 2 name', vals: ['Jump back in', 'Recently used', 'Recent', 'Back to it', 'Last opened', 'Custom…'], i: store.get('row2n', 0), custom: store.get('row2c', '') },
     acc:   { name: 'Accent color', vals: ACCENTS.map(a => a[0]), i: store.get('acc', 0) },
     away:  { name: 'Away screen', vals: ['1 min', '3 min', '5 min', '10 min'], i: [0, 1, 2, 3].includes(store.get('away', 2)) ? store.get('away', 2) : 2 },
+    secs:  { name: 'Clock seconds', vals: ['On', 'Off'], i: store.get('secs', 0) === 1 ? 1 : 0 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
     lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
@@ -1210,6 +1211,7 @@
     if (id === 'acc') { store.set(id, o.i); applyRows(); }
     if (id === 'snd') store.set('snd', o.i);
     if (id === 'away') { store.set('away', o.i); IDLE = 60000 * AWAY_MIN[o.i]; poke(); }
+    if (id === 'secs') { store.set('secs', o.i); tick(); }
     if (id === 'lite') { setLite(o.i === 1); return; }
     if (id === 'lime') { setLime(o.i === 1); return drawJump(id); }
     drawJump(id);
@@ -1842,7 +1844,7 @@
     const d = new Date(), h = d.getHours();
     const hm = `${h % 12 || 12}:${two(d.getMinutes())}`, ap = h < 12 ? 'am' : 'pm';
     const date = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    $('clkHM').textContent = hm; $('clkS').textContent = ':' + two(d.getSeconds()); $('clkAP').textContent = ap;
+    $('clkHM').textContent = hm; $('clkS').textContent = J.secs.i === 1 ? '' : ':' + two(d.getSeconds()); $('clkAP').textContent = ap;
     $('clkDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     if (d.getSeconds() % 30 === 0) drawWx();
     $('sbHM').textContent = hm; $('sbAP').textContent = ap; $('sbDate').textContent = date;

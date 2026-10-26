@@ -72,6 +72,7 @@
   .brand__row .hd-barcode { width: 120px; height: 16px; }
   .mid { position: relative; height: 84px; align-self: end; }
   .clock { position: relative; display: grid; justify-items: start; gap: 4px; }
+  .clock__date { position: absolute; left: 0; top: 100%; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }   /* same as .net__ip / .wx__city; top set in alignClockHead */
   .clock__head { position: absolute; left: 0; white-space: nowrap; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }   /* same as .wx__head / .net__head; top set in alignClockHead */
   .clock__time { color: var(--hd-act); font-size: 76px; }
   .clock__time .hd-num__frac { color: var(--hd-act-dim); }
@@ -495,7 +496,7 @@
     <div class="clock">
       <span class="clock__time hd-num hd-num--split"><span class="hd-num__int" id="clkHM">0:00</span><span class="hd-num__frac" id="clkS">:00</span><span class="hd-num__unit" id="clkAP">am</span></span>
       <span class="clock__head" id="clkHead">Local time</span>
-      <span class="hd-label"><span class="hd-label--meta" id="clkDate"></span></span>
+      <span class="clock__date" id="clkDate"></span>
     </div>
   </header>
   <hr class="hd-rule top-rule">
@@ -1927,6 +1928,10 @@
     const line = [...document.querySelectorAll('.net__line, .wx__cond')].find(e => e.offsetParent && e.textContent.trim());
     const shift = line ? Math.round(clockShift + baseline(line) - baseline($('clkHM'))) : 0;
     if (shift !== clockShift) { clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; }
+    // the date's baseline sits level with the IP address / city line
+    const foot = [...document.querySelectorAll('.net__ip, .wx__city')].find(e => e.offsetParent && e.textContent.trim() && getComputedStyle(e).visibility !== 'hidden');
+    const date = $('clkDate');
+    if (foot) date.style.top = `${Math.round(date.offsetTop + baseline(foot) - baseline(date))}px`;
     const other = [...document.querySelectorAll('.wx__head, .net__head')].find(e => e.offsetParent);
     const top = other ? other.getBoundingClientRect().top - clock.getBoundingClientRect().top : -head.offsetHeight - 6;
     head.style.top = `${Math.round(top)}px`;

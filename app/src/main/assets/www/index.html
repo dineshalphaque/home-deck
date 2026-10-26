@@ -1672,6 +1672,20 @@
   }
   const deg = f => Math.round(WX.unit === 'C' ? (f - 32) * 5 / 9 : f);          // always fetched in Fahrenheit
   const ageText = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)}h ago`; };
+  // the cloud and the temperature digits each sit centred between the bottom of the header and the top of the condition line
+  const wxShift = { wxIco: 0, wxTemp: 0 };
+  function alignWx() {
+    const el = $('wx'); if (el.hidden || !el.offsetParent) return;
+    const head = el.querySelector('.wx__head'), cond = $('wxCond'); if (!head || !cond.textContent.trim()) return;
+    const k = el.getBoundingClientRect().height / el.offsetHeight || 1;
+    const gapMid = (baseline(head) + baseline(cond) - capH(cond) * k) / 2;
+    const ico = $('wxIco').getBoundingClientRect(), temp = $('wxTemp');
+    const mids = { wxIco: (ico.top + ico.bottom) / 2, wxTemp: baseline(temp) - capH(temp) * k / 2 };
+    for (const id in mids) {
+      const s = Math.round(wxShift[id] + (gapMid - mids[id]) / k);
+      if (s !== wxShift[id]) { wxShift[id] = s; $(id).style.transform = s ? `translateY(${s}px)` : ''; }
+    }
+  }
   let wxLogged = '';
   function logWx() {   // where the weather pieces sit, in layout px from the top-left of the block (diagnostics)
     const el = $('wx'); if (el.hidden || !el.offsetParent) return;
@@ -1969,7 +1983,7 @@
     $('clkDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     alignClockHead();
     if (d.getSeconds() % 30 === 0) drawWx();
-    logWx();
+    alignWx(); logWx();
     $('sbHM').textContent = hm; $('sbAP').textContent = ap; $('sbDate').textContent = date;
   }
   tick(); setInterval(tick, 1000);

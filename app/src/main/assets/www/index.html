@@ -71,7 +71,8 @@
   .brand__row { display: flex; align-items: center; gap: 18px; margin-top: 10px; }
   .brand__row .hd-barcode { width: 120px; height: 16px; }
   .mid { position: relative; height: 84px; align-self: end; }
-  .clock { display: grid; justify-items: end; gap: 4px; }
+  .clock { position: relative; display: grid; justify-items: start; gap: 4px; }
+  .clock__head { position: absolute; right: 0; white-space: nowrap; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }   /* same as .wx__head / .net__head; top set in alignClockHead */
   .clock__time { color: var(--hd-act); font-size: 76px; }
   .clock__time .hd-num__frac { color: var(--hd-act-dim); }
   .clock__time .hd-num__unit { color: var(--hd-chrome); font-size: .34em; letter-spacing: .1em; }
@@ -493,7 +494,8 @@
     </div>
     <div class="clock">
       <span class="clock__time hd-num hd-num--split"><span class="hd-num__int" id="clkHM">0:00</span><span class="hd-num__frac" id="clkS">:00</span><span class="hd-num__unit" id="clkAP">am</span></span>
-      <span class="hd-label"><span style="color:var(--hd-chrome)">Local time //</span> <span class="hd-label--meta" id="clkDate"></span></span>
+      <span class="clock__head" id="clkHead">Local time</span>
+      <span class="hd-label"><span class="hd-label--meta" id="clkDate"></span></span>
     </div>
   </header>
   <hr class="hd-rule top-rule">
@@ -1913,12 +1915,20 @@
   /* =====================================================================
      Clock, standby, boot, first run
      ===================================================================== */
+  // the Local time head sits level with the Link / Weather heads; with both hidden it sits just above the time
+  function alignClockHead() {
+    const head = $('clkHead'), clock = head.parentElement;
+    const other = [...document.querySelectorAll('.wx__head, .net__head')].find(e => e.offsetParent);
+    const top = other ? other.getBoundingClientRect().top - clock.getBoundingClientRect().top : -head.offsetHeight - 6;
+    head.style.top = `${Math.round(top)}px`;
+  }
   function tick() {
     const d = new Date(), h = d.getHours();
     const hm = `${h % 12 || 12}:${two(d.getMinutes())}`, ap = h < 12 ? 'am' : 'pm';
     const date = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     $('clkHM').textContent = hm; $('clkS').textContent = J.secs.i === 1 ? '' : ':' + two(d.getSeconds()); $('clkAP').textContent = ap;
     $('clkDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    alignClockHead();
     if (d.getSeconds() % 30 === 0) drawWx();
     $('sbHM').textContent = hm; $('sbAP').textContent = ap; $('sbDate').textContent = date;
   }

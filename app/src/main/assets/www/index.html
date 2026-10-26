@@ -1846,20 +1846,23 @@
     const m = document.createElement('span'); m.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
     el.appendChild(m); const y = m.getBoundingClientRect().top; m.remove(); return y;
   };
+  const capCtx = document.createElement('canvas').getContext('2d');
+  const capH = el => { const c = getComputedStyle(el); capCtx.font = `${c.fontWeight} ${c.fontSize} ${c.fontFamily}`; return capCtx.measureText('0').actualBoundingBoxAscent; };
   let clockShift = 0;
   function alignClockHead() {
-    const head = $('clkHead'), clock = head.parentElement;
-    // the time's baseline sits level with the Ethernet / Wi-Fi line (or the weather condition line)
-    const line = [...document.querySelectorAll('.net__line, .wx__cond')].find(e => e.offsetParent && e.textContent.trim());
-    const shift = line ? Math.round(clockShift + baseline(line) - baseline($('clkHM'))) : 0;
-    if (shift !== clockShift) { clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; }
-    // the date's baseline sits level with the IP address / city line
-    const foot = [...document.querySelectorAll('.net__ip, .wx__city')].find(e => e.offsetParent && e.textContent.trim() && getComputedStyle(e).visibility !== 'hidden');
-    const date = $('clkDate');
-    if (foot) date.style.top = `${Math.round(date.offsetTop + baseline(foot) - baseline(date))}px`;
-    const other = [...document.querySelectorAll('.wx__head, .net__head')].find(e => e.offsetParent);
-    const top = other ? head.offsetTop + baseline(other) - baseline(head) : -head.offsetHeight - 6;
-    head.style.top = `${Math.round(top)}px`;
+    const head = $('clkHead'), date = $('clkDate'), hm = $('clkHM'), clock = head.parentElement;
+    const shown = sel => [...document.querySelectorAll(sel)].find(e => e.offsetParent && e.textContent.trim() && getComputedStyle(e).visibility !== 'hidden');
+    const other = shown('.wx__head, .net__head'), foot = shown('.net__ip, .wx__city');
+    const place = () => {   // header and date baselines level with the Link / Weather header and the IP / city line
+      head.style.top = `${Math.round(other ? head.offsetTop + baseline(other) - baseline(head) : -head.offsetHeight - 6)}px`;
+      if (foot) date.style.top = `${Math.round(date.offsetTop + baseline(foot) - baseline(date))}px`;
+    };
+    place();
+    if (!other || !foot) return;
+    // the hour:minute digits sit centred between the bottom of the header and the top of the date
+    const gapMid = (baseline(head) + baseline(date) - capH(date)) / 2, digitMid = baseline(hm) - capH(hm) / 2;
+    const shift = Math.round(clockShift + gapMid - digitMid);
+    if (shift !== clockShift) { clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; place(); }
   }
   function tick() {
     const d = new Date(), h = d.getHours();

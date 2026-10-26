@@ -1847,7 +1847,18 @@
     el.appendChild(m); const y = m.getBoundingClientRect().top; m.remove(); return y;
   };
   const capCtx = document.createElement('canvas').getContext('2d');
-  const capH = el => { const c = getComputedStyle(el); capCtx.font = `${c.fontWeight} ${c.fontSize} ${c.fontFamily}`; return capCtx.measureText('0').actualBoundingBoxAscent; };
+  // height of a digit's ink. Some TV WebViews reject a canvas font list (e.g. one with system-ui) and silently keep
+  // 10px sans-serif, so try the families one at a time and fall back to a fixed share of the font size.
+  const capH = el => {
+    const c = getComputedStyle(el), px = parseFloat(c.fontSize);
+    for (const fam of [c.fontFamily, ...c.fontFamily.split(',').map(f => f.trim())]) {
+      capCtx.font = '10px serif'; capCtx.font = `${c.fontWeight} ${c.fontSize} ${fam}`;
+      if (capCtx.font === '10px serif') continue;   // rejected
+      const h = capCtx.measureText('0').actualBoundingBoxAscent;
+      if (h > px * .4 && h < px) return h;
+    }
+    return px * .7;
+  };
   let clockShift = 0;
   function alignClockHead() {
     const head = $('clkHead'), date = $('clkDate'), hm = $('clkHM'), clock = head.parentElement;

@@ -1916,8 +1916,17 @@
      Clock, standby, boot, first run
      ===================================================================== */
   // the Local time head sits level with the Link / Weather heads; with both hidden it sits just above the time
+  const baseline = el => {   // y of the text baseline: a zero-height inline-block sits on it
+    const m = document.createElement('span'); m.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    el.appendChild(m); const y = m.getBoundingClientRect().top; m.remove(); return y;
+  };
+  let clockShift = 0;
   function alignClockHead() {
     const head = $('clkHead'), clock = head.parentElement;
+    // the time's baseline sits level with the Ethernet / Wi-Fi line (or the weather condition line)
+    const line = [...document.querySelectorAll('.net__line, .wx__cond')].find(e => e.offsetParent && e.textContent.trim());
+    const shift = line ? Math.round(clockShift + baseline(line) - baseline($('clkHM'))) : 0;
+    if (shift !== clockShift) { clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; }
     const other = [...document.querySelectorAll('.wx__head, .net__head')].find(e => e.offsetParent);
     const top = other ? other.getBoundingClientRect().top - clock.getBoundingClientRect().top : -head.offsetHeight - 6;
     head.style.top = `${Math.round(top)}px`;

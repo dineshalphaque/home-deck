@@ -1601,6 +1601,15 @@
   }
   const deg = f => Math.round(WX.unit === 'C' ? (f - 32) * 5 / 9 : f);          // always fetched in Fahrenheit
   const ageText = t => { const m = Math.max(0, Math.round((Date.now() - t) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)}h ago`; };
+  let wxLogged = '';
+  function logWx() {   // where the weather pieces sit, in layout px from the top-left of the block (diagnostics)
+    const el = $('wx'); if (el.hidden || !el.offsetParent) return;
+    const k = el.getBoundingClientRect().height / el.offsetHeight || 1, box = el.getBoundingClientRect();
+    const at = id => { const r = $(id).getBoundingClientRect(); return `${id} x ${((r.left - box.left) / k).toFixed(1)}-${((r.right - box.left) / k).toFixed(1)} y ${((r.top - box.top) / k).toFixed(1)}-${((r.bottom - box.top) / k).toFixed(1)}`; };
+    const temp = $('wxTemp'), base = (baseline(temp) - box.top) / k, cap = capH(temp);
+    const line = `wx: k ${k.toFixed(3)} box ${(box.width / k).toFixed(1)}x${(box.height / k).toFixed(1)} | ${at('wxIco')} | ${at('wxTemp')} digits y ${(base - cap).toFixed(1)}-${base.toFixed(1)} | ${at('wxCond')} | ${at('wxCity')}`;
+    if (line !== wxLogged) { wxLogged = line; console.log(line); }
+  }
   function drawWx() {
     const el = $('wx'), c = WX.cache, show = WX.on && WX.city && c && c.city === WX.city.name;
     el.hidden = !show; $('top').classList.toggle('has-wx', !!show);
@@ -1864,16 +1873,18 @@
     const head = $('clkHead'), date = $('clkDate'), hm = $('clkHM'), clock = head.parentElement;
     const shown = sel => [...document.querySelectorAll(sel)].find(e => e.offsetParent && e.textContent.trim() && getComputedStyle(e).visibility !== 'hidden');
     const other = shown('.wx__head, .net__head'), foot = shown('.net__ip, .wx__city');
+    // the TV shrinks the whole 1920-wide stage with a transform: screen distances divide by k to become layout px
+    const k = clock.getBoundingClientRect().height / clock.offsetHeight || 1;
     const place = () => {   // header and date baselines level with the Link / Weather header and the IP / city line
-      head.style.top = `${Math.round(other ? head.offsetTop + baseline(other) - baseline(head) : -head.offsetHeight - 6)}px`;
-      if (foot) date.style.top = `${Math.round(date.offsetTop + baseline(foot) - baseline(date))}px`;
+      head.style.top = `${Math.round(other ? head.offsetTop + (baseline(other) - baseline(head)) / k : -head.offsetHeight - 6)}px`;
+      if (foot) date.style.top = `${Math.round(date.offsetTop + (baseline(foot) - baseline(date)) / k)}px`;
     };
     place();
     if (!other || !foot) return;
     // the hour:minute digits sit centred between the bottom of the header and the top of the date
-    const gapMid = (baseline(head) + baseline(date) - capH(date)) / 2, digitMid = baseline(hm) - capH(hm) / 2;
-    const shift = Math.round(clockShift + gapMid - digitMid);
-    if (shift !== clockShift) { console.log(`clock: shift ${shift} capHM ${capH(hm).toFixed(1)} capDate ${capH(date).toFixed(1)} gapMid ${gapMid.toFixed(1)} digitMid ${digitMid.toFixed(1)}`); clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; place(); }
+    const gapMid = (baseline(head) + baseline(date) - capH(date) * k) / 2, digitMid = baseline(hm) - capH(hm) * k / 2;
+    const shift = Math.round(clockShift + (gapMid - digitMid) / k);
+    if (shift !== clockShift) { console.log(`clock: k ${k.toFixed(3)} shift ${shift} capHM ${capH(hm).toFixed(1)} capDate ${capH(date).toFixed(1)} gapMid ${gapMid.toFixed(1)} digitMid ${digitMid.toFixed(1)}`); clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; place(); }
   }
   function tick() {
     const d = new Date(), h = d.getHours();
@@ -1883,6 +1894,7 @@
     $('clkDate').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     alignClockHead();
     if (d.getSeconds() % 30 === 0) drawWx();
+    logWx();
     $('sbHM').textContent = hm; $('sbAP').textContent = ap; $('sbDate').textContent = date;
   }
   tick(); setInterval(tick, 1000);

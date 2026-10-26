@@ -1624,7 +1624,7 @@
     $('wxIco').innerHTML = ICONS[ico];
     $('wxTemp').innerHTML = `${deg(c.temp)}&deg;<small>${WX.unit}</small>`;
     $('wxCond').textContent = `${word} // H ${deg(c.hi)}° L ${deg(c.lo)}°`;
-    $('wxCity').textContent = `${c.city} // ${stale ? 'last update ' : 'updated '}${ageText(c.t)}`;
+    $('wxCity').textContent = `${c.city} // ${stale ? 'last update ' : ''}${ageText(c.t)}`;
     el.classList.toggle('is-stale', stale);
   }
   async function wxFetch() {

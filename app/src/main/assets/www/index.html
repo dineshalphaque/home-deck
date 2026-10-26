@@ -1948,7 +1948,7 @@
     // the hour:minute digits sit centred between the bottom of the header and the top of the date
     const gapMid = (baseline(head) + baseline(date) - capH(date)) / 2, digitMid = baseline(hm) - capH(hm) / 2;
     const shift = Math.round(clockShift + gapMid - digitMid);
-    if (shift !== clockShift) { clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; place(); }
+    if (shift !== clockShift) { console.log(`clock: shift ${shift} capHM ${capH(hm).toFixed(1)} capDate ${capH(date).toFixed(1)} gapMid ${gapMid.toFixed(1)} digitMid ${digitMid.toFixed(1)}`); clockShift = shift; clock.style.transform = shift ? `translateY(${shift}px)` : ''; place(); }
   }
   function tick() {
     const d = new Date(), h = d.getHours();

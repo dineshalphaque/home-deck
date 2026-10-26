@@ -1858,7 +1858,7 @@
     const date = $('clkDate');
     if (foot) date.style.top = `${Math.round(date.offsetTop + baseline(foot) - baseline(date))}px`;
     const other = [...document.querySelectorAll('.wx__head, .net__head')].find(e => e.offsetParent);
-    const top = other ? other.getBoundingClientRect().top - clock.getBoundingClientRect().top : -head.offsetHeight - 6;
+    const top = other ? head.offsetTop + baseline(other) - baseline(head) : -head.offsetHeight - 6;
     head.style.top = `${Math.round(top)}px`;
   }
   function tick() {

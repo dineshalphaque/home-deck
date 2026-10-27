@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Home Deck</title>
+<title>Alpha Deck</title>
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="kit/tokens.css">
 <link rel="stylesheet" href="kit/components.css">
@@ -448,7 +448,7 @@
 
   <header class="top" id="top">
     <div class="brand">
-      <span class="brand__mark hd-device" data-hd-glitch-text data-layers="2" data-glitch-on="mode">Home Deck</span>
+      <span class="brand__mark hd-device" data-hd-glitch-text data-layers="2" data-glitch-on="mode">Alpha Deck</span>
       <div class="brand__row">
         <span class="hd-screen-sub" id="brandSub" style="margin:0">Living room // 4K display</span>
         <span data-hd-code data-kind="barcode" data-seed="home-deck-3"></span>
@@ -531,7 +531,7 @@
 
   <div class="jump" id="jump">
     <div class="hd-panel hd-panel--spine-act">
-      <div class="hd-panel__head">Jump To <span class="jump__ver">Home Deck v0.1 // glidian.dev</span></div>
+      <div class="hd-panel__head">Jump To <span class="jump__ver">Alpha Deck v0.1 // glidian.dev</span></div>
       <div id="jList"></div>
       <div class="jump__foot">
         <span class="hd-hint"><span class="hd-key">&larr;</span><span class="hd-key">&rarr;</span>Change</span>
@@ -637,7 +637,7 @@
   <div class="boot" id="boot">
     <div class="boot__box">
       <span class="hd-bootlog__status">System start</span>
-      <span class="hd-title-card hd-device boot__title" id="bootTitle" data-hd-glitch-text data-layers="2">Home Deck</span>
+      <span class="hd-title-card hd-device boot__title" id="bootTitle" data-hd-glitch-text data-layers="2">Alpha Deck</span>
       <div class="hd-log" id="bootLog"></div>
       <span class="boot__build">Build // glidian.dev</span>
     </div>
@@ -1166,7 +1166,7 @@
   };
   const jump = $('jump'), jList = $('jList');
   J.order = { name: 'App order', vals: ['Reset'], i: 0 };
-  J.about = { name: 'About', vals: ['Home Deck'], i: 0 };
+  J.about = { name: 'About', vals: ['Alpha Deck'], i: 0 };
   if (NATIVE) {   // a home screen app can't change the picture, sound or sleep timer itself, so these open the TV's own settings
     J.pic = { name: 'Picture', icon: 'picture', vals: ['Open TV settings'], i: 0, open: 'picture' };
     J.snd = { name: 'Sound', icon: 'sound', vals: ['Open TV settings'], i: 0, open: 'sound' };
@@ -1216,7 +1216,7 @@
   }
   function okJump(id) {
     const o = J[id];
-    if (id === 'about') { closeJump(); return toast('area', 'About', 'Home Deck v0.1', 'Fan-made and free. App names and logos belong to their owners. Not affiliated with or endorsed by any of them.', 15000); }
+    if (id === 'about') { closeJump(); return toast('area', 'About', 'Alpha Deck v0.1', 'Fan-made and free. App names and logos belong to their owners. Not affiliated with or endorsed by any of them.', 15000); }
     if (id === 'order') { closeJump(); store.set('order', {}); renderApps(); arm(); return toast('job', 'Apps', 'Order reset', 'Each group is back in its usual order.'); }
     if (o.open) {
       closeJump();

@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const ADB = process.env.ADB || 'adb';   // adb on your PATH, or set ADB to its full path
-const PKG = 'dev.glidian.homedeck';
+const PKG = 'com.alphaque.alphadeck';
 const PORT = 9333;
 const args = process.argv.slice(2);
 const lite = args.includes('lite');

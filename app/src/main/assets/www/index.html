@@ -1216,7 +1216,7 @@
   }
   function okJump(id) {
     const o = J[id];
-    if (id === 'about') { closeJump(); return toast('area', 'About', 'Alpha Deck v0.1', 'Fan-made and free. App names and logos belong to their owners. Not affiliated with or endorsed by any of them.', 15000); }
+    if (id === 'about') { closeJump(); return toast('area', 'About', 'Alpha Deck v0.1', 'Alpha Deck is a derivative work of Home Deck by glidian.dev. Fan-made and free. App names and logos belong to their owners. Not affiliated with or endorsed by any of them.', 15000); }
     if (id === 'order') { closeJump(); store.set('order', {}); renderApps(); arm(); return toast('job', 'Apps', 'Order reset', 'Each group is back in its usual order.'); }
     if (o.open) {
       closeJump();

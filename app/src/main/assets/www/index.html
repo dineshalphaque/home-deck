@@ -1856,7 +1856,7 @@
   const spot = () => { sbPos.style.transform = `translate(${80 + Math.random() * 1000}px, ${80 + Math.random() * 560}px)`; };
   function drift() { if (reduce) return spot(); sbPos.classList.add('fade'); setTimeout(() => { spot(); sbPos.classList.remove('fade'); }, 650); }
   function sleep() {
-    if (sleeping || setupOpen || !IDLE) return;
+    if (sleeping || setupOpen) return;
     if (moving) endMove(false);
     endCall(false); closeOpts(); closeJump(); closeInfo(); closeSearch(); endLink();
     document.querySelectorAll('.hd-toast').forEach(t => t.remove());

@@ -1207,7 +1207,7 @@
   const isLime = () => HD.getMode() === 'lime';
   function setLime(on) {
     HD.setMode(on ? 'lime' : 'normal');
-    if (J.lime) J.lime.i = on ? 1 : 0;
+    J.lime.i = on ? 1 : 0;
     store.set('lime', on ? 1 : 0);
     toast('area', 'Display mode', on ? 'Lime mode on' : 'Back to normal', on ? 'Lime on teal-black.' : 'Your color again.');
   }
@@ -1254,7 +1254,7 @@
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
-  if (J.lime.i) HD.setMode('lime');   // restore the saved Lime mode quietly, no toast
+  if (J.lime.i) HD.setMode('lime');
   const jump = $('jump'), jList = $('jList');
   J.order = { name: 'App order', vals: ['Reset'], i: 0 };
   J.about = { name: 'About', vals: ['Alpha Deck'], i: 0 };

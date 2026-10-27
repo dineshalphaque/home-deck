@@ -764,9 +764,9 @@
     ['Tools and more', ['Play Store', 'Downloader', 'Lumen Fitness']],
   ];
   APPS.length = 0;
-  LIST.forEach(([name, file, glow, kind]) => APPS.push({ name, file, glow, kind, bg: '#0b0b10', fg: glow }));
-  SET3.forEach(([name, file, glow, kind, line]) => APPS.push({ name, file, glow, kind, line, bg: '#0b0b10', fg: glow }));
-  EXTRA.forEach(([name, kind]) => APPS.push({ name, kind, file: null, plain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, glow: '#8f8889', bg: '#0b0b10', fg: '#fff' }));
+  LIST.forEach(([name, file, glow, kind]) => APPS.push({ name, file, glow, kind, bg: '#0b0b10', fg: glow, cb: file, cbGlow: glow, sysPlain: null }));
+  SET3.forEach(([name, file, glow, kind, line]) => APPS.push({ name, file, glow, kind, line, bg: '#0b0b10', fg: glow, cb: file, cbGlow: glow, sysPlain: null }));
+  EXTRA.forEach(([name, kind]) => APPS.push({ name, kind, file: null, plain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, glow: '#8f8889', bg: '#0b0b10', fg: '#fff', cb: null, cbPlain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, cbGlow: '#8f8889', sysPlain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null }));
   if (NATIVE) {
     const art = new Map([...LIST.map(([name, file, glow, kind]) => [name, { file, glow, kind }]),
                          ...SET3.map(([name, file, glow, kind, line]) => [name, { file, glow, kind, line }]),
@@ -776,10 +776,14 @@
     NATIVE.apps().forEach(a => {
       // a known app keeps its name, kind and line; without its tile art it shows its own icon in a badge
       const name = NATIVE.artName(a.pkg, a.label, names), m = name && art.get(name), has = m && NATIVE.hasArt(m.file);
-      APPS.push(m ? { name, ...m, file: has ? m.file : null, plain: has ? null : a.icon, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: m.glow }
-        : { name: a.label, kind: a.kind, file: null, plain: a.icon, glow: '#8f8889', pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff' });
+      APPS.push(m ? { name, ...m, file: has ? m.file : null, plain: has ? null : a.icon, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: m.glow, cb: m.file, cbPlain: has ? null : a.icon, cbGlow: m.glow, sysPlain: a.icon }
+        : { name: a.label, kind: a.kind, file: null, plain: a.icon, glow: '#8f8889', pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff', cb: null, cbPlain: a.icon, cbGlow: '#8f8889', sysPlain: a.icon });
     });
   }
+  // the CoreBuilds icons setting: the single switch between the pack's art and each app's own system icon
+  let cbOn = store.get('cbicons', 0) !== 1;
+  function applyIconPack() { APPS.forEach(a => { a.file = cbOn ? a.cb : null; a.plain = cbOn ? a.cbPlain : a.sysPlain; delete a.bgImg; }); }
+  applyIconPack();
   const DESC = {
     Streaming: 'Films and series on demand.', Video: 'Videos, channels and your subscriptions.', Anime: 'Anime, the same day as Japan.',
     Music: 'Music, playlists and podcasts.', Games: 'Games on the big screen.', Store: 'Get more apps for this TV.',
@@ -986,14 +990,17 @@
   renderAll();
   HD.init(stage);
 
-  // finish the badge apps once their colors and art are known (fonts first, for the initials art)
-  const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
-  Promise.all(APPS.map(async a => {
-    if (a.file) return;
-    if (a.plain) { a.glow = await mainColor(a.plain); a.bgImg = a.plain; }
-    else { a.glow = hashCol(a.name); await fontsReady; a.bgImg = initialsArt(initials(a.name), a.glow); }
-    a.fg = a.glow;
-  })).then(() => { const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
+  function finishBadges() {
+    // finish the badge apps once their colors and art are known (fonts first, for the initials art)
+    const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+    return Promise.all(APPS.map(async a => {
+      if (a.file) { a.glow = a.cbGlow; a.fg = a.cbGlow; return; }
+      if (a.plain) { a.glow = await mainColor(a.plain); a.bgImg = a.plain; }
+      else { a.glow = hashCol(a.name); await fontsReady; a.bgImg = initialsArt(initials(a.name), a.glow); }
+      a.fg = a.glow;
+    })).then(() => { const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
+  }
+  finishBadges();
 
   /* =====================================================================
      The takeover
@@ -1225,6 +1232,7 @@
     secs:  { name: 'Clock seconds', vals: ['On', 'Off'], i: store.get('secs', 0) === 1 ? 1 : 0 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
     lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: store.get('lime', 0) === 1 ? 1 : 0 },
+    cbic:  { name: 'CoreBuilds icons', vals: ['On', 'Off'], i: store.get('cbicons', 0) === 1 ? 1 : 0 },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
@@ -1285,6 +1293,7 @@
     if (id === 'secs') { store.set('secs', o.i); tick(); }
     if (id === 'lite') { setLite(o.i === 1); return; }
     if (id === 'lime') { setLime(o.i === 1); return drawJump(id); }
+    if (id === 'cbic') { store.set('cbicons', o.i); cbOn = o.i === 0; applyIconPack(); renderAll(); arm(); finishBadges(); }
     drawJump(id);
   }
   function okJump(id) {

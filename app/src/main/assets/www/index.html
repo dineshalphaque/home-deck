@@ -72,8 +72,10 @@
   .brand__row .hd-barcode { width: 120px; height: 16px; }
   .mid { position: relative; height: 84px; align-self: end; }
   .clock { position: relative; display: grid; justify-items: start; gap: 4px; }
-  .clock__date { position: absolute; left: 0; top: 100%; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }   /* same as .net__ip / .wx__city; top set in alignClockHead */
-  .clock__head { position: absolute; left: 0; white-space: nowrap; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }   /* same as .wx__head / .net__head; top set in alignClockHead */
+  .clock__date, .net__ip, .wx__city { font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }
+  .clock__head, .net__head, .wx__head { font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }
+  .clock__date { position: absolute; left: 0; top: 100%; }   /* top set in alignClockHead */
+  .clock__head { position: absolute; left: 0; white-space: nowrap; }   /* top set in alignClockHead */
   .clock__time { color: var(--hd-act); font-size: 76px; }
   .clock__time .hd-num__frac { color: var(--hd-act-dim); }
   .clock__time .hd-num__unit { color: var(--hd-chrome); font-size: .34em; letter-spacing: .1em; }
@@ -347,21 +349,21 @@
         transition: opacity var(--hd-t-slow) var(--hd-ease-out); }
   .wx[hidden] { display: none; }
   .wx.is-stale { opacity: .5; }
-  .wx__head { grid-column: 1 / -1; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }
+  .wx__head { grid-column: 1 / -1; }
   .wx__ico { width: 48px; height: 48px; color: var(--hd-act); }
   .wx__ico svg { width: 100%; height: 100%; display: block; }
   .wx__temp { font-family: var(--hd-font-num); font-weight: 600; font-size: 50px; line-height: .9; color: var(--hd-text-strong); white-space: nowrap; }
   .wx__temp small { font-size: .45em; color: var(--hd-act-dim); margin-left: 2px; }
   .wx__cond { grid-column: 1 / -1; font-size: 18px; letter-spacing: var(--hd-tr-label); text-transform: uppercase; color: var(--hd-chrome); white-space: nowrap; }
-  .wx__city { grid-column: 1 / -1; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }
+  .wx__city { grid-column: 1 / -1; }
   /* Top-bar link status, next to the weather (or the clock when weather is off): Wi-Fi band // speed, or cable speed, then the IPv4 address */
   .net { display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 3px; align-items: center; align-self: end; padding-bottom: 2px; }
   .net[hidden] { display: none; }
-  .net__head { grid-column: 1 / -1; font: 400 14px/1 var(--hd-font-mono); letter-spacing: .08em; color: var(--hd-chrome-dim); text-transform: uppercase; }
+  .net__head { grid-column: 1 / -1; }
   .net__ico { grid-column: 1 / -1; width: 48px; height: 48px; color: var(--hd-act); }   /* same rows as .wx: head, icon, cond, city */
   .net__ico svg { width: 100%; height: 100%; display: block; }
   .net__line { grid-column: 1 / -1; font-size: 18px; letter-spacing: var(--hd-tr-label); text-transform: uppercase; color: var(--hd-chrome); white-space: nowrap; }
-  .net__ip { grid-column: 1 / -1; font: 400 15px/1 var(--hd-font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--hd-text-meta); white-space: nowrap; }
+  .net__ip { grid-column: 1 / -1; }
   .net.is-off .net__ico { color: var(--hd-chrome-dim); opacity: .6; }
   .net.is-off .net__ip { visibility: hidden; }
 
@@ -889,7 +891,7 @@
     $('netLine').textContent = off ? 'Offline'
       : n.type === 'wifi' ? [n.mhz ? `${n.mhz > 4900 ? '5' : '2.4'} GHz` : '', n.mbps > 0 ? `${n.mbps} Mbps` : ''].filter(Boolean).join(' // ') || 'Wi-Fi'
       : n.type === 'ethernet' ? (n.mbps > 0 ? `${n.mbps} Mbps` : 'Ethernet') : 'Online';
-    $('netIp').textContent = off ? '\u00a0' : n.ip || '\u00a0';   // keep the row so the lines stay level with the weather
+    $('netIp').textContent = (!off && n.ip) || '\u00a0';   // keep the row so the lines stay level with the weather
     $('topNet').hidden = false;
     setTimeout(layoutSoon, 0);
   }
@@ -1818,10 +1820,10 @@
     packs.hidden = false; drawPacks();
     TV.focus(pkList.querySelector(`[data-pk="${iconPack}"]`) || pkList.querySelector('[data-f]'));
   }
-  function closePackPicker() {
+  function closePackPicker(back = true) {
     if (!packsOpen) return;
     packsOpen = false; packs.hidden = true; pkList.innerHTML = ''; untrap(null);
-    setTimeout(() => { openJump(); const r = jList.querySelector('[data-jl="iconpack"]'); if (r) { cur = null; TV.focus(r); } });
+    if (back) setTimeout(() => { openJump(); const r = jList.querySelector('[data-jl="iconpack"]'); if (r) { cur = null; TV.focus(r); } });
   }
   function setIconPack(id) {
     iconPack = id; store.set('iconpack', id);
@@ -2044,7 +2046,7 @@
   function sleep() {
     if (sleeping || setupOpen) return;
     if (moving) endMove(false);
-    endCall(false); closeOpts(); closeJump(); closeInfo(); closeSearch(); endLink();
+    endCall(false); closeOpts(); closeJump(); closeInfo(); closeSearch(); closeExtras(); closePackPicker(false); endLink();
     document.querySelectorAll('.hd-toast').forEach(t => t.remove());
     sleeping = true; spot(); standby.classList.add('on');
     driftTimer = setInterval(drift, 20000);

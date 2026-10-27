@@ -1251,7 +1251,7 @@
     secs:  { name: 'Clock seconds', vals: ['On', 'Off'], i: store.get('secs', 0) === 1 ? 1 : 0 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
     lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: store.get('lime', 0) === 1 ? 1 : 0 },
-    iconpack: { name: 'IconPack', vals: ['Open'], i: 0, pick: true },
+    iconpack: { name: 'IconPack', vals: ['Open'], i: 0, action: openPackPicker },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
@@ -1303,7 +1303,7 @@
     untrap(beforeJump);
   }
   function stepJump(id, d) {
-    if (J[id]?.pick) return;
+    if (J[id]?.action) return;
     const o = J[id]; o.i = (o.i + d + o.vals.length) % o.vals.length;
     if (id === 'row1' || id === 'row2') { store.set(id + 'n', o.i); applyRows(); }
     if (id === 'acc') { store.set(id, o.i); applyRows(); }
@@ -1326,7 +1326,7 @@
     }
     if ((id === 'row1' || id === 'row2') && o.vals[o.i] === 'Custom…')
       return openKbd(`${o.name} // custom`, o.custom, t => { o.custom = t; store.set(id + 'c', t); applyRows(); drawJump(id); });
-    if (id === 'iconpack') { closeJump(); return setTimeout(openPackPicker); }
+    if (o.action) { closeJump(); return setTimeout(o.action); }
     if (id === 'setup') { closeJump(); return setTimeout(openSetup); }
     if (id === 'ext') { closeJump(); return setTimeout(openExtras); }
     if (id === 'inp') {

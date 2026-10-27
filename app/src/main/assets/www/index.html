@@ -1250,7 +1250,7 @@
     secs:  { name: 'Clock seconds', vals: ['On', 'Off'], i: store.get('secs', 0) === 1 ? 1 : 0 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
     lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: store.get('lime', 0) === 1 ? 1 : 0 },
-    iconpack: { name: 'IconPack', vals: ICON_PACKS.map(p => p.label), i: Math.max(0, ICON_PACKS.findIndex(p => p.id === iconPack)), pick: true },
+    iconpack: { name: 'IconPack', vals: ['Open'], i: 0, pick: true },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
@@ -1821,7 +1821,6 @@
   }
   function setIconPack(id) {
     iconPack = id; store.set('iconpack', id);
-    J.iconpack.i = Math.max(0, ICON_PACKS.findIndex(p => p.id === id));
     applyIconPack(); renderAll(); arm(); finishBadges();
   }
   drawWx();

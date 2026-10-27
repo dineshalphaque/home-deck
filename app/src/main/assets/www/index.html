@@ -611,6 +611,17 @@
       </div>
     </div>
   </div>
+  <div class="scrim extras" id="packs" hidden>
+    <div class="hd-panel hd-panel--spine-act ovl ex__box">
+      <div class="hd-panel__head">IconPack <span data-hd-code data-kind="serial" data-mask="IP-000" data-seed="packs"></span></div>
+      <p class="ex__lead">Pick the icons the home screen shows for your apps.</p>
+      <div id="pkList"></div>
+      <div class="jump__foot">
+        <span class="hd-hint"><span class="hd-key hd-key--word">OK</span>Pick</span>
+        <span class="hd-hint"><span class="hd-key hd-key--word">Back</span>Close</span>
+      </div>
+    </div>
+  </div>
 
   <div class="scrim kbd" id="kbd" hidden>
     <div class="hd-panel hd-panel--spine-act ovl kbd__box">
@@ -761,9 +772,16 @@
         : { name: a.label, kind: a.kind, file: null, plain: a.icon, glow: '#8f8889', pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff', cb: null, cbPlain: a.icon, cbGlow: '#8f8889', sysPlain: a.icon });
     });
   }
-  // the CoreBuilds icons setting: the single switch between the pack's art and each app's own system icon
-  let cbOn = store.get('cbicons', 0) !== 1;
-  function applyIconPack() { APPS.forEach(a => { a.file = cbOn ? a.cb : null; a.plain = cbOn ? a.cbPlain : a.sysPlain; delete a.bgImg; }); }
+  // icon packs: the single switch between each app's own system icon and a bundled pack's art; add packs here
+  const ICON_PACKS = [{ id: 'default', label: 'Default Icons' }, { id: 'corebuilds', label: 'Corebuilds Icons' }];
+  let iconPack = ICON_PACKS.some(p => p.id === store.get('iconpack', 'default')) ? store.get('iconpack', 'default') : 'default';
+  function applyIconPack() {
+    APPS.forEach(a => {
+      if (iconPack === 'corebuilds') { a.file = a.cb; a.plain = a.cbPlain; }
+      else { a.file = null; a.plain = a.sysPlain; }
+      delete a.bgImg;
+    });
+  }
   applyIconPack();
   const DESC = {
     Streaming: 'Films and series on demand.', Video: 'Videos, channels and your subscriptions.', Anime: 'Anime, the same day as Japan.',
@@ -1193,7 +1211,7 @@
     away:  { name: 'Away screen', vals: ['1 min', '3 min', '5 min', '10 min'], i: [0, 1, 2, 3].includes(store.get('away', 2)) ? store.get('away', 2) : 2 },
     lite:  { name: 'Lite mode', vals: ['Off', 'On'], i: 0 },
     lime:  { name: 'Lime mode', vals: ['Off', 'On'], i: 0 },
-    cbic:  { name: 'CoreBuilds icons', vals: ['On', 'Off'], i: store.get('cbicons', 0) === 1 ? 1 : 0 },
+    iconpack: { name: 'IconPack', vals: ICON_PACKS.map(p => p.label), i: Math.max(0, ICON_PACKS.findIndex(p => p.id === iconPack)), pick: true },
     ext:   { name: 'Online extras', vals: ['Open'], i: 0 },
     setup: { name: 'Setup', vals: ['Run again'], i: 0 },
   };
@@ -1238,6 +1256,7 @@
     untrap(beforeJump);
   }
   function stepJump(id, d) {
+    if (J[id]?.pick) return;
     const o = J[id]; o.i = (o.i + d + o.vals.length) % o.vals.length;
     if (id === 'row1' || id === 'row2') { store.set(id + 'n', o.i); applyRows(); }
     if (id === 'acc') { store.set(id, o.i); applyRows(); }
@@ -1245,7 +1264,6 @@
     if (id === 'away') { store.set('away', o.i); IDLE = 60000 * AWAY_MIN[o.i]; poke(); }
     if (id === 'lite') { setLite(o.i === 1); return; }
     if (id === 'lime') { setLime(o.i === 1); return drawJump(id); }
-    if (id === 'cbic') { store.set('cbicons', o.i); cbOn = o.i === 0; applyIconPack(); renderAll(); arm(); finishBadges(); }
     drawJump(id);
   }
   function okJump(id) {
@@ -1259,6 +1277,7 @@
     }
     if ((id === 'row1' || id === 'row2') && o.vals[o.i] === 'Custom…')
       return openKbd(`${o.name} // custom`, o.custom, t => { o.custom = t; store.set(id + 'c', t); applyRows(); drawJump(id); });
+    if (id === 'iconpack') { closeJump(); return setTimeout(openPackPicker); }
     if (id === 'setup') { closeJump(); return setTimeout(openSetup); }
     if (id === 'ext') { closeJump(); return setTimeout(openExtras); }
     if (id === 'inp') {
@@ -1718,6 +1737,30 @@
     if (!extrasOpen) return;
     extrasOpen = false; extras.hidden = true; exList.innerHTML = ''; untrap(beforeExtras);
   }
+  // the IconPack picker: same popup, rows and focus as Online extras; OK picks, Back closes, both return to the settings menu
+  const packs = $('packs'), pkList = $('pkList');
+  let packsOpen = false;
+  function drawPacks() {
+    pkList.innerHTML = ICON_PACKS.map(p => `<div class="exl hd-frame" data-pk="${p.id}" data-f>
+      <span class="exl__name">${esc(p.label)}</span><span class="exl__val">${p.id === iconPack ? 'Current' : ''}</span>
+      <span class="exl__desc">${p.id === 'default' ? 'Each app keeps its own icon from the TV.' : 'Icons and banners from the CoreBuilds pack.'}</span></div>`).join('');
+  }
+  function openPackPicker() {
+    if (packsOpen || trapped) return;
+    packsOpen = true; trap(packs);
+    packs.hidden = false; drawPacks();
+    TV.focus(pkList.querySelector(`[data-pk="${iconPack}"]`) || pkList.querySelector('[data-f]'));
+  }
+  function closePackPicker() {
+    if (!packsOpen) return;
+    packsOpen = false; packs.hidden = true; pkList.innerHTML = ''; untrap(null);
+    setTimeout(() => { openJump(); const r = jList.querySelector('[data-jl="iconpack"]'); if (r) { cur = null; TV.focus(r); } });
+  }
+  function setIconPack(id) {
+    iconPack = id; store.set('iconpack', id);
+    J.iconpack.i = Math.max(0, ICON_PACKS.findIndex(p => p.id === id));
+    applyIconPack(); renderAll(); arm(); finishBadges();
+  }
   drawWx();
 
   /* =====================================================================
@@ -1842,6 +1885,7 @@
     if (d.pick != null) return pickFav(el);
     if (d.sw != null) { J.acc.i = +d.sw; store.set('acc', J.acc.i); applyRows(); setup.querySelectorAll('.sw').forEach(s => s.classList.toggle('is-picked', s === el)); return; }
     if (d.ex) return setTimeout(() => exOk(d.ex));
+    if (d.pk) return setTimeout(() => { setIconPack(d.pk); closePackPicker(); });
     if (d.nl) {
       const p = PORTS.find(x => x.id === d.nl);
       if (p.arc) return toast('area', `HDMI ${p.n}`, 'Audio out (ARC)', 'A sound output, not an input. Change it in Inputs.');
@@ -1976,6 +2020,14 @@
       else if ((k === 'ArrowLeft' || k === 'ArrowRight') && items[i]) { stop(); exStep(items[i].dataset.ex, k === 'ArrowLeft' ? -1 : 1); }
       else if (back) { stop(); closeExtras(); }
       else if (k === 'Enter' && e.repeat) stop();
+      return;
+    }
+    if (packsOpen) {
+      const items = [...pkList.querySelectorAll('[data-f]')], i = items.indexOf(cur);
+      if (k === 'ArrowUp' || k === 'ArrowDown') { stop(); cur = null; TV.focus(items[(i + (k === 'ArrowUp' ? -1 : 1) + items.length) % items.length]); }
+      else if (back) { stop(); closePackPicker(); }
+      else if (k === 'Enter' && e.repeat) stop();
+      else if (k.startsWith('Arrow')) stop();
       return;
     }
     if (jumpOpen) {

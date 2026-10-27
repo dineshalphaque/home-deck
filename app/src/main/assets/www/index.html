@@ -776,6 +776,7 @@
   // icon packs: the single switch between each app's own system icon and a bundled pack's art; add packs here
   const ICON_PACKS = [{id:'default',label:'Default Icons',desc:'Each app keeps its own icon from the TV.'},{id:'original',label:'Original',desc:'The icons and banners Home Deck shipped with.'},{id:'corebuilds',label:'Corebuilds Icons',desc:'Icons and banners from the CoreBuilds pack.'}];
   let iconPack = ICON_PACKS.some(p => p.id === store.get('iconpack', 'default')) ? store.get('iconpack', 'default') : 'default';
+  let badgeRun = 0;
   function applyIconPack() {
     APPS.forEach(a => {
       const p = a.art[iconPack] || a.art.default; a.file = p.file; a.plain = p.plain; delete a.bgImg;
@@ -971,14 +972,15 @@
   HD.init(stage);
 
   function finishBadges() {
-    // finish the badge apps once their colors and art are known (fonts first, for the initials art)
+    // finish the badge apps once their colors and art are known (fonts first, for the initials art); a newer run drops this one
+    const run = ++badgeRun;
     const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
     return Promise.all(APPS.map(async a => {
       if (a.file) { const p = a.art[iconPack] || a.art.default; a.glow = p.glow; a.fg = p.glow; return; }
-      if (a.plain) { a.glow = await mainColor(a.plain); a.bgImg = a.plain; }
-      else { a.glow = hashCol(a.name); await fontsReady; a.bgImg = initialsArt(initials(a.name), a.glow); }
+      if (a.plain) { const g = await mainColor(a.plain); if (run !== badgeRun) return; a.glow = g; a.bgImg = a.plain; }
+      else { const g = hashCol(a.name); await fontsReady; if (run !== badgeRun) return; a.glow = g; a.bgImg = initialsArt(initials(a.name), g); }
       a.fg = a.glow;
-    })).then(() => { const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
+    })).then(() => { if (run !== badgeRun) return; const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
   }
   finishBadges();
 

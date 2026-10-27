@@ -106,6 +106,21 @@ final class Bridge {
     }
 
     @JavascriptInterface
+    public String appVersion() {
+        try {
+            PackageInfo p = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            String name = p.versionName;
+            long code = android.os.Build.VERSION.SDK_INT >= 28 ? p.getLongVersionCode() : p.versionCode;
+            JSONObject o = new JSONObject();
+            put(o, "name", name != null ? name : "");
+            put(o, "code", code);
+            return o.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    @JavascriptInterface
     public String network() {
         JSONObject o = new JSONObject();
         ConnectivityManager cm = context.getSystemService(ConnectivityManager.class);

@@ -52,6 +52,7 @@ window.NATIVE = (() => {
   return {
     on(type, fn) { (handlers[type] ||= []).push(fn); },
     device: () => json(B.device(), {}),
+    appVersion: () => json(B.appVersion(), {}),
     network: () => json(B.network(), { type: 'none' }),
     apps: () => json(B.apps(), []),
     // the design's name for an installed app: by package first, then by a matching label

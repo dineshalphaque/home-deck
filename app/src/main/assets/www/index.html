@@ -775,9 +775,10 @@
     ['Tools and more', ['Play Store', 'Downloader', 'Lumen Fitness']],
   ];
   APPS.length = 0;
-  LIST.forEach(([name, file, glow, kind]) => APPS.push({ name, file, glow, kind, bg: '#0b0b10', fg: glow, cb: file, cbGlow: glow, sysPlain: null }));
-  SET3.forEach(([name, file, glow, kind, line]) => APPS.push({ name, file, glow, kind, line, bg: '#0b0b10', fg: glow, cb: file, cbGlow: glow, sysPlain: null }));
-  EXTRA.forEach(([name, kind]) => APPS.push({ name, kind, file: null, plain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, glow: '#8f8889', bg: '#0b0b10', fg: '#fff', cb: null, cbPlain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null, cbGlow: '#8f8889', sysPlain: PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null }));
+  // a.art keyed by pack
+  LIST.forEach(([name, file, glow, kind]) => APPS.push({ name, kind, bg: '#0b0b10', fg: glow, glow, art: { default: {file:null, plain:null, glow}, original: {file:'original/'+file, plain:null, glow}, corebuilds: {file, plain:null, glow} } }));
+  SET3.forEach(([name, file, glow, kind, line]) => APPS.push({ name, kind, line, bg: '#0b0b10', fg: glow, glow, art: { default: {file:null, plain:null, glow}, original: {file:'original/'+file, plain:null, glow}, corebuilds: {file, plain:null, glow} } }));
+  EXTRA.forEach(([name, kind]) => { const svg = PLAIN[name] ? 'data:image/svg+xml,' + encodeURIComponent(PLAIN[name]) : null; APPS.push({ name, kind, bg: '#0b0b10', fg: '#fff', glow: '#8f8889', art: { default: {file:null, plain:svg, glow:'#8f8889'}, original: {file:null, plain:svg, glow:'#8f8889'}, corebuilds: {file:null, plain:svg, glow:'#8f8889'} } }); });
   if (NATIVE) {
     const art = new Map([...LIST.map(([name, file, glow, kind]) => [name, { file, glow, kind }]),
                          ...SET3.map(([name, file, glow, kind, line]) => [name, { file, glow, kind, line }]),
@@ -787,18 +788,17 @@
     NATIVE.apps().forEach(a => {
       // a known app keeps its name, kind and line; without its tile art it shows its own icon in a badge
       const name = NATIVE.artName(a.pkg, a.label, names), m = name && art.get(name), has = m && NATIVE.hasArt(m.file);
-      APPS.push(m ? { name, ...m, file: has ? m.file : null, plain: has ? null : a.icon, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: m.glow, cb: m.file, cbPlain: has ? null : a.icon, cbGlow: m.glow, sysPlain: a.icon }
-        : { name: a.label, kind: a.kind, file: null, plain: a.icon, glow: '#8f8889', pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff', cb: null, cbPlain: a.icon, cbGlow: '#8f8889', sysPlain: a.icon });
+      APPS.push(m ? { name, ...m, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: m.glow, glow: m.glow, art: { default: {file:null, plain:a.icon, glow:m.glow}, corebuilds: {file:has?m.file:null, plain:has?null:a.icon, glow:m.glow}, original: NATIVE.hasArt('original/'+m.file)?{file:'original/'+m.file,plain:null,glow:m.glow}:{file:null,plain:a.icon,glow:m.glow} } }
+        : { name: a.label, kind: a.kind, pkg: a.pkg, system: a.system, bg: '#0b0b10', fg: '#fff', glow: '#8f8889', art: { default: {file:null, plain:a.icon, glow:'#8f8889'}, original: {file:null, plain:a.icon, glow:'#8f8889'}, corebuilds: {file:null, plain:a.icon, glow:'#8f8889'} } });
     });
   }
   // icon packs: the single switch between each app's own system icon and a bundled pack's art; add packs here
-  const ICON_PACKS = [{ id: 'default', label: 'Default Icons' }, { id: 'corebuilds', label: 'Corebuilds Icons' }];
+  const ICON_PACKS = [{id:'default',label:'Default Icons',desc:'Each app keeps its own icon from the TV.'},{id:'original',label:'Original',desc:'The icons and banners Home Deck shipped with.'},{id:'corebuilds',label:'Corebuilds Icons',desc:'Icons and banners from the CoreBuilds pack.'}];
   let iconPack = ICON_PACKS.some(p => p.id === store.get('iconpack', 'default')) ? store.get('iconpack', 'default') : 'default';
+  let badgeRun = 0;
   function applyIconPack() {
     APPS.forEach(a => {
-      if (iconPack === 'corebuilds') { a.file = a.cb; a.plain = a.cbPlain; }
-      else { a.file = null; a.plain = a.sysPlain; }
-      delete a.bgImg;
+      const p = a.art[iconPack] || a.art.default; a.file = p.file; a.plain = p.plain; delete a.bgImg;
     });
   }
   applyIconPack();
@@ -1009,14 +1009,15 @@
   HD.init(stage);
 
   function finishBadges() {
-    // finish the badge apps once their colors and art are known (fonts first, for the initials art)
+    // finish the badge apps once their colors and art are known (fonts first, for the initials art); a newer run drops this one
+    const run = ++badgeRun;
     const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
     return Promise.all(APPS.map(async a => {
-      if (a.file) { a.glow = a.cbGlow; a.fg = a.cbGlow; return; }
-      if (a.plain) { a.glow = await mainColor(a.plain); a.bgImg = a.plain; }
-      else { a.glow = hashCol(a.name); await fontsReady; a.bgImg = initialsArt(initials(a.name), a.glow); }
+      if (a.file) { const p = a.art[iconPack] || a.art.default; a.glow = p.glow; a.fg = p.glow; return; }
+      if (a.plain) { const g = await mainColor(a.plain); if (run !== badgeRun) return; a.glow = g; a.bgImg = a.plain; }
+      else { const g = hashCol(a.name); await fontsReady; if (run !== badgeRun) return; a.glow = g; a.bgImg = initialsArt(initials(a.name), g); }
       a.fg = a.glow;
-    })).then(() => { const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
+    })).then(() => { if (run !== badgeRun) return; const f = cur; renderFavs(); renderApps(); arm(); refocus(f); });
   }
   finishBadges();
 
@@ -1806,7 +1807,7 @@
   function drawPacks() {
     pkList.innerHTML = ICON_PACKS.map(p => `<div class="exl hd-frame" data-pk="${p.id}" data-f>
       <span class="exl__name">${esc(p.label)}</span><span class="exl__val">${p.id === iconPack ? 'Current' : ''}</span>
-      <span class="exl__desc">${p.id === 'default' ? 'Each app keeps its own icon from the TV.' : 'Icons and banners from the CoreBuilds pack.'}</span></div>`).join('');
+      <span class="exl__desc">${p.desc}</span></div>`).join('');
   }
   function openPackPicker() {
     if (packsOpen || trapped) return;
